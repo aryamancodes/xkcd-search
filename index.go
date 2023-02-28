@@ -4,11 +4,11 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"xkcd/db"
  )
 
-
 func main() {
-	resp, err := http.Get("https://xkcd.com/info.0.json")
+	resp, err := http.Get("https://xkcd.com/2741/info.0.json")
 	if err != nil {
 	   log.Fatalln(err)
 	}
@@ -18,6 +18,8 @@ func main() {
 	   log.Fatalln(err)
 	}
 	
-	sb := string(body)
-	log.Printf(sb)
+	db.New()
+
+	body_string := string(body)
+	log.Printf(body_string)
  }
