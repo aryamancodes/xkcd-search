@@ -8,6 +8,6 @@ CREATE TABLE comic (
   title      BLOB NOT NULL,
   alt        BLOB NOT NULL, 
   transcript BLOB NOT NULL,
-  img        VARCHAR(500) CHARACTER SET utf8mb4 NOT NULL,
+  img        VARCHAR(200) CHARACTER SET utf8mb4 NOT NULL,
   PRIMARY KEY (`id`)
 );
