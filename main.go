@@ -11,10 +11,17 @@ import (
 	"xkcd/model"
 )
 
-var currentNum int = 1
+const baseURL = "https://xkcd.com/"
+const suffixURL = "/info.0.json"
+
+var currentNum int
+var comicChan = make(chan model.Comic)
 
 func main() {
-	resp, err := http.Get("https://xkcd.com/info.0.json")
+	db.New()
+
+	currComicURL := fmt.Sprintf("%s%s", baseURL, suffixURL)
+	resp, err := http.Get(currComicURL)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -24,16 +31,14 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	db.New()
-
-	var currentComic model.Comic
-	json.Unmarshal([]byte(body), &currentComic)
-	currentNum = currentComic.Number
+	var currComic model.Comic
+	json.Unmarshal([]byte(body), &currComic)
+	currentNum = currComic.Number
 	getAllComics()
 }
 
-func getComic(num int) model.Comic {
-	path := fmt.Sprintf("%s%d%s", "https://xkcd.com/", num, "/info.0.json")
+func getComic(num int) {
+	path := fmt.Sprintf("%s%d%s", baseURL, num, suffixURL)
 	resp, err := http.Get(path)
 	if err != nil {
 		log.Fatalln(err)
@@ -44,19 +49,21 @@ func getComic(num int) model.Comic {
 		log.Fatalln(err)
 	}
 
-	var output model.Comic
-	json.Unmarshal([]byte(body), &output)
-	return output
+	var requestedComic model.Comic
+	json.Unmarshal([]byte(body), &requestedComic)
+	comicChan <- requestedComic
 }
 
 func getAllComics() []model.Comic {
 	output := make([]model.Comic, currentNum)
 	for i := 0; i < currentNum; i++ {
-		output[i] = getComic(i + 1)
+		go getComic(i + 1)
+		output[i] = <-comicChan
+
 		if output[i].Title == "" {
-			log.Printf("WARNING: THIS COMIC HAS NO TITLE %d\n", i+1)
+			output[i].Title = fmt.Sprintf("%d", i) // Some comics have no title (such as 404 LOL) so set the number as title
 		} else {
-			log.Printf("%d: %s\n", i+1, output[i].Title)
+			log.Printf("q%d: %s\n", i+1, output[i].Title)
 		}
 	}
 	return output
