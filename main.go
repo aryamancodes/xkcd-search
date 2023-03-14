@@ -5,5 +5,5 @@ import (
 )
 
 func main() {
-	util.GetAllComics()
+	util.FetchAllExplanations()
 }

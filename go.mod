@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/go-sql-driver/mysql v1.7.0
+	github.com/sethgrid/pester v1.2.0
 	github.com/tidwall/gjson v1.14.4
 	rsc.io/quote v1.5.2
 )
