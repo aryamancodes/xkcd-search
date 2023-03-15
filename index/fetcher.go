@@ -1,6 +1,6 @@
-// Scrape all xkcd explanations based on the current comic number
+// Functions to fetch all the data to index -- including the latest comic number and all explanations (concurrently) upto the latest
 
-package util
+package index
 
 import (
 	"fmt"
@@ -70,7 +70,7 @@ func fetchExplanation(num int) {
 
 		json.Unmarshal([]byte(body), &fetchedExplainWiki)
 
-		//even if we get status code 200, an internal wiki error might have occured - needs refetching
+		//even if we get status code 200, an internal wiki error might have occured -- needs refetching
 		if fetchedExplainWiki.Parse.Title == "" {
 			fetchExplanation(num)
 		} else {

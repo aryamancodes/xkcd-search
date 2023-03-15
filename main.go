@@ -1,9 +1,9 @@
 package main
 
 import (
-	"xkcd/util"
+	"xkcd/index"
 )
 
 func main() {
-	util.FetchAllExplanations()
+	index.FetchAllExplanations()
 }
