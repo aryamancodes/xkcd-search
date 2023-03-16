@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"math/rand"
 	"net/http"
 	"time"
@@ -81,16 +82,18 @@ func fetchExplanation(num int) {
 	explainChan <- fetchedExplainWiki
 }
 
-// fetch all explanations based on the current cominc number
+// (concurrently) fetch all explanations based on the current comic number
 func FetchAllExplanations() []model.ExplainWikiJson {
 	latestComicNumber := getCurrentComicNum()
-	explanationsList := make([]model.ExplainWikiJson, latestComicNumber)
+	test := int(math.Max(250, float64(latestComicNumber)))
+	explanationsList := make([]model.ExplainWikiJson, test)
+	//explanationsList := make([]model.ExplainWikiJson, latestComicNumber)
 
-	for i := 0; i < latestComicNumber; i++ {
+	for i := 0; i < test; i++ {
 		go fetchExplanation(i + 1)
 	}
 
-	for i := 0; i < latestComicNumber; i++ {
+	for i := 0; i < test; i++ {
 		explanationsList[i] = <-explainChan
 	}
 
