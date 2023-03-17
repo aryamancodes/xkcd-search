@@ -3,6 +3,7 @@
 package index
 
 import (
+	"math"
 	"regexp"
 	"strings"
 
@@ -11,13 +12,14 @@ import (
 
 var termFreqChan = make(chan model.TermFreq, 250)
 
-func computeTermFreq(terms []string) {
+func computeTermFreq(terms []string, comic model.ExplainWikiJson) {
 	termFreq := make(map[string]int)
 	for _, term := range terms {
 		termFreq[term]++
 	}
 
 	termFreqChan <- model.TermFreq{
+		Comic:           comic,
 		TermInComicFreq: termFreq,
 		TotalTerms:      len(terms),
 	}
@@ -29,7 +31,7 @@ func ComputeAllTermFreq(comics []model.ExplainWikiJson) []model.TermFreq {
 	for _, comic := range comics {
 		terms := regexp.MustCompile(`[^a-zA-Z0-9 ]+`).ReplaceAllString(comic.Parse.Title+" "+comic.Parse.Wikitext.Content, " ")
 		termsList := strings.Split(terms, " ")
-		go computeTermFreq(termsList)
+		go computeTermFreq(termsList, comic)
 	}
 
 	for i := range comics {
@@ -52,9 +54,34 @@ func ComputeAllComicFreq(comics []model.ExplainWikiJson, termFreqs []model.TermF
 		ComicsWithTermFreq: comicFreq,
 		TotalComics:        len(comics),
 	}
-
 }
 
-func RankQuery() {
+func RankQuery(query string, allTerms []model.TermFreq, allComics model.ComicFreq) []model.RankedComic {
 
+	tf := func(queryTerm string, currComicTerms model.TermFreq) float64 {
+		queryTermInCurrComic := currComicTerms.TermInComicFreq[queryTerm]
+		totalTerms := currComicTerms.TotalTerms
+		return float64(queryTermInCurrComic) / float64(totalTerms)
+	}
+
+	idf := func(queryTerm string) float64 {
+		queryTermInAllComics := math.Max(float64(allComics.ComicsWithTermFreq[queryTerm]), 1)
+		totalComics := float64(allComics.TotalComics)
+		return math.Log10(totalComics / queryTermInAllComics)
+	}
+
+	rankings := make([]model.RankedComic, allComics.TotalComics)
+	queryTerms := strings.Split(query, " ")
+
+	for i := 0; i < allComics.TotalComics; i++ {
+		rank := float64(0.0)
+		for _, queryTerm := range queryTerms {
+			rank += tf(queryTerm, allTerms[i]) + idf(queryTerm)
+		}
+		rankings = append(rankings, model.RankedComic{
+			Comic: allTerms[i].Comic,
+			Rank:  rank,
+		})
+	}
+	return rankings
 }

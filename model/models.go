@@ -10,8 +10,15 @@ type Comic struct {
 	Image       string
 }
 
+// struct to store the ranking of a query
+type RankedComic struct {
+	Comic ExplainWikiJson
+	Rank  float64
+}
+
 // struct with the number of occurences of a term in a comic, along with the number of total comicß terms
 type TermFreq struct {
+	Comic           ExplainWikiJson
 	TermInComicFreq map[string]int // term -> # times term occurs in comic
 	TotalTerms      int
 }
