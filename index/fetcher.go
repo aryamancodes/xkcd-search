@@ -83,11 +83,9 @@ func FetchAllExplanations() []model.ExplainWikiJson {
 	latestComicNumber := getCurrentComicNum()
 	test := int(math.Max(250, float64(latestComicNumber)))
 	explanationsList := make([]model.ExplainWikiJson, 0)
-	//explanationsList := make([]model.ExplainWikiJson, latestComicNumber)
 
 	for i := 0; i < test; i++ {
 		go fetchExplanation(i + 1)
-		//close(explainChan)
 	}
 
 	for i := 0; i < test; i++ {

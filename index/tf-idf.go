@@ -27,7 +27,7 @@ func computeTermFreq(terms []string, comic model.ExplainWikiJson) {
 
 // (concurrently) calculate the number of occurences of a term and the total number of terms in a comic, for all comics
 func ComputeAllTermFreq(comics []model.ExplainWikiJson) []model.TermFreq {
-	termFreqs := make([]model.TermFreq, 0, len(comics))
+	termFreqs := make([]model.TermFreq, 0)
 	for _, comic := range comics {
 		terms := regexp.MustCompile(`[^a-zA-Z0-9 ]+`).ReplaceAllString(comic.Parse.Title+" "+comic.Parse.Wikitext.Content, " ")
 		termsList := strings.Split(terms, " ")
@@ -43,7 +43,7 @@ func ComputeAllTermFreq(comics []model.ExplainWikiJson) []model.TermFreq {
 
 // calculate the number of comics each term occurs in and the total number of comics
 func ComputeAllComicFreq(comics []model.ExplainWikiJson, termFreqs []model.TermFreq) model.ComicFreq {
-	comicFreq := make(map[string]int, len(comics))
+	comicFreq := make(map[string]int)
 	for _, termFreq := range termFreqs {
 		for term := range termFreq.TermInComicFreq {
 			comicFreq[term]++
@@ -57,31 +57,39 @@ func ComputeAllComicFreq(comics []model.ExplainWikiJson, termFreqs []model.TermF
 }
 
 func RankQuery(query string, allTerms []model.TermFreq, allComics model.ComicFreq) []model.RankedComic {
-
 	tf := func(queryTerm string, currComicTerms model.TermFreq) float64 {
-		queryTermInCurrComic := currComicTerms.TermInComicFreq[queryTerm]
-		totalTerms := currComicTerms.TotalTerms
-		return float64(queryTermInCurrComic) / float64(totalTerms)
+		queryTermInCurrComic := float64(currComicTerms.TermInComicFreq[queryTerm])
+		if queryTermInCurrComic == 0 {
+			return 0
+		}
+
+		// ln normalised tf to favour distinct query terms matching fewer times rather than the same query terms matching many times
+		// ref: https://ecommons.cornell.edu/bitstream/handle/1813/7281/97-1626.pdf?sequence=1 (page 8)
+		return 1 + math.Log(queryTermInCurrComic)
 	}
 
 	idf := func(queryTerm string) float64 {
-		queryTermInAllComics := math.Max(float64(allComics.ComicsWithTermFreq[queryTerm]), 1)
+		comicsWithQueryTerm := math.Max(float64(allComics.ComicsWithTermFreq[queryTerm]), 1)
 		totalComics := float64(allComics.TotalComics)
-		return math.Log10(totalComics / queryTermInAllComics)
+		return math.Log10(totalComics / comicsWithQueryTerm)
 	}
 
-	rankings := make([]model.RankedComic, allComics.TotalComics)
+	rankings := make([]model.RankedComic, 0)
 	queryTerms := strings.Split(query, " ")
 
 	for i := 0; i < allComics.TotalComics; i++ {
-		rank := float64(0.0)
+		rank := 0.0
 		for _, queryTerm := range queryTerms {
-			rank += tf(queryTerm, allTerms[i]) + idf(queryTerm)
+			rank += tf(queryTerm, allTerms[i]) * idf(queryTerm)
 		}
-		rankings = append(rankings, model.RankedComic{
-			Comic: allTerms[i].Comic,
-			Rank:  rank,
-		})
+
+		//only return comics whose rank isn't 0
+		if rank > 0 {
+			rankings = append(rankings, model.RankedComic{
+				Comic: allTerms[i].Comic,
+				Rank:  rank,
+			})
+		}
 	}
 	return rankings
 }
