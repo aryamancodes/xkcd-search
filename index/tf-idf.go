@@ -27,15 +27,15 @@ func computeTermFreq(terms []string, comic model.ExplainWikiJson) {
 
 // (concurrently) calculate the number of occurences of a term and the total number of terms in a comic, for all comics
 func ComputeAllTermFreq(comics []model.ExplainWikiJson) []model.TermFreq {
-	termFreqs := make([]model.TermFreq, len(comics))
+	termFreqs := make([]model.TermFreq, 0, len(comics))
 	for _, comic := range comics {
 		terms := regexp.MustCompile(`[^a-zA-Z0-9 ]+`).ReplaceAllString(comic.Parse.Title+" "+comic.Parse.Wikitext.Content, " ")
 		termsList := strings.Split(terms, " ")
 		go computeTermFreq(termsList, comic)
 	}
 
-	for i := range comics {
-		termFreqs[i] = <-termFreqChan
+	for range comics {
+		termFreqs = append(termFreqs, <-termFreqChan)
 	}
 
 	return termFreqs

@@ -9,6 +9,7 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
+	"os"
 	"time"
 	"xkcd/model"
 
@@ -41,41 +42,36 @@ func getCurrentComicNum() int {
 func fetchExplanation(num int) {
 	explainURL := fmt.Sprintf(explainationURL, num)
 
-	var resp *http.Response
+	var fetchedExplainWiki model.ExplainWikiJson
 
-	//try to fetch explanation from wiki
 	for {
-		tryResp, err := http.Get(explainURL)
+
+		//try to fetch explanation from wiki
+		resp, err := http.Get(explainURL)
 		if err != nil {
 			log.Fatalln(err)
 		}
 
 		//concurrent fetches may lead to >500 cloudflare errors
-		if tryResp.StatusCode != http.StatusOK {
+		if resp.StatusCode != http.StatusOK {
 			time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
 		} else {
-			resp = tryResp
-			break
-		}
-	}
 
-	//try to unmarshal response into json
-	var fetchedExplainWiki model.ExplainWikiJson
-	for {
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatalln(err)
-		}
+			//try to unmarshal response into json
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			defer resp.Body.Close()
 
-		defer resp.Body.Close()
+			json.Unmarshal([]byte(body), &fetchedExplainWiki)
 
-		json.Unmarshal([]byte(body), &fetchedExplainWiki)
-
-		//even if we get status code 200, an internal wiki error might have occured -- needs refetching
-		if fetchedExplainWiki.Parse.Title == "" {
-			fetchExplanation(num)
-		} else {
-			break
+			//even if we get status code 200, an internal wiki error might have occured -- needs refetching
+			if fetchedExplainWiki.Parse.Title == "" {
+				continue
+			} else {
+				break
+			}
 		}
 	}
 
@@ -86,17 +82,18 @@ func fetchExplanation(num int) {
 func FetchAllExplanations() []model.ExplainWikiJson {
 	latestComicNumber := getCurrentComicNum()
 	test := int(math.Max(250, float64(latestComicNumber)))
-	explanationsList := make([]model.ExplainWikiJson, test)
+	explanationsList := make([]model.ExplainWikiJson, 0)
 	//explanationsList := make([]model.ExplainWikiJson, latestComicNumber)
 
 	for i := 0; i < test; i++ {
 		go fetchExplanation(i + 1)
+		//close(explainChan)
 	}
 
 	for i := 0; i < test; i++ {
-		explanationsList[i] = <-explainChan
+		explanationsList = append(explanationsList, <-explainChan)
 	}
 
-	fmt.Printf("FINAL RESULT IS %d\n", len(explanationsList))
+	fmt.Fprintf(os.Stderr, "FINAL RESULT IS %+v\n", explanationsList)
 	return explanationsList
 }
