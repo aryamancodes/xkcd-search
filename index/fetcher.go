@@ -9,7 +9,6 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
-	"os"
 	"time"
 	"xkcd/model"
 
@@ -55,6 +54,7 @@ func fetchExplanation(num int) {
 		//concurrent fetches may lead to >500 cloudflare errors
 		if resp.StatusCode != http.StatusOK {
 			time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+			continue
 		} else {
 
 			//try to unmarshal response into json
@@ -92,6 +92,6 @@ func FetchAllExplanations() []model.ExplainWikiJson {
 		explanationsList = append(explanationsList, <-explainChan)
 	}
 
-	fmt.Fprintf(os.Stderr, "FINAL RESULT IS %+v\n", explanationsList)
+	//fmt.Fprintf(os.Stderr, "FINAL RESULT IS %+v\n", explanationsList)
 	return explanationsList
 }

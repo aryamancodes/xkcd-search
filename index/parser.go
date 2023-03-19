@@ -1,3 +1,2 @@
+// TODO: Add support to properly parse the wiki
 package index
-
-//TODO: Add support to properly parse the wiki

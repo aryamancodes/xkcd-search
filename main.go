@@ -18,7 +18,7 @@ func main() {
 	fmt.Fprintf(os.Stderr, "\nDOC FREQ LOOKS LIKE: %+v\n", df.TotalComics)
 
 	for {
-		fmt.Println("ENTER A QUERY TERM:")
+		fmt.Println("ENTER A QUERY:")
 		var query string
 
 		scanner := bufio.NewScanner(os.Stdin)
