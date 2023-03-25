@@ -3,6 +3,7 @@
 package index
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -10,9 +11,9 @@ import (
 	"math/rand"
 	"net/http"
 	"time"
-	"xkcd/model"
 
-	"encoding/json"
+	"xkcd/db"
+	"xkcd/model"
 )
 
 const currentComicURL = "https://xkcd.com/info.0.json"
@@ -89,9 +90,10 @@ func FetchAllExplanations() []model.ExplainWikiJson {
 	}
 
 	for i := 0; i < test; i++ {
-		explanationsList = append(explanationsList, <-explainChan)
+		explanation := <-explainChan
+		db.StoreComics(i, explanation.Parse.Wikitext.Content)
+		explanationsList = append(explanationsList, explanation)
 	}
 
-	//fmt.Fprintf(os.Stderr, "FINAL RESULT IS %+v\n", explanationsList)
 	return explanationsList
 }

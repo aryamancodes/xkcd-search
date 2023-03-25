@@ -7,15 +7,20 @@ import (
 	"regexp"
 	"strings"
 
+	"xkcd/db"
 	"xkcd/model"
 )
 
 var termFreqChan = make(chan model.TermFreq, 250)
 
-func computeTermFreq(terms []string, comic model.ExplainWikiJson) {
+func computeTermFreq(terms []string, comic model.ExplainWikiJson, index int) {
 	termFreq := make(map[string]int)
 	for _, term := range terms {
 		termFreq[term]++
+	}
+
+	for term, freq := range termFreq {
+		db.StoreTermFreq(index, term, freq, len(terms))
 	}
 
 	termFreqChan <- model.TermFreq{
@@ -28,10 +33,10 @@ func computeTermFreq(terms []string, comic model.ExplainWikiJson) {
 // (concurrently) calculate the number of occurences of a term and the total number of terms in a comic, for all comics
 func ComputeAllTermFreq(comics []model.ExplainWikiJson) []model.TermFreq {
 	termFreqs := make([]model.TermFreq, 0)
-	for _, comic := range comics {
+	for i, comic := range comics {
 		terms := regexp.MustCompile(`[^a-zA-Z0-9 ]+`).ReplaceAllString(comic.Parse.Title+" "+comic.Parse.Wikitext.Content, " ")
 		termsList := strings.Split(terms, " ")
-		go computeTermFreq(termsList, comic)
+		go computeTermFreq(termsList, comic, i)
 	}
 
 	for range comics {
@@ -48,6 +53,9 @@ func ComputeAllComicFreq(comics []model.ExplainWikiJson, termFreqs []model.TermF
 		for term := range termFreq.TermInComicFreq {
 			comicFreq[term]++
 		}
+	}
+	for term, freq := range comicFreq {
+		db.StoreComicFreq(term, freq, len(comics))
 	}
 
 	return model.ComicFreq{
