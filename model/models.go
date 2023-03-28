@@ -2,23 +2,23 @@ package model
 
 // comic struct used for indexing
 type Comic struct {
-	Number      int
-	Date        string
-	Title       string
-	Transcript  string
-	Explanation string
-	Image       string
+	Num int
+	//Date        string
+	//Title       string
+	Transcript string
+	//Explanation string
+	//Image       string
 }
 
 // struct to store the ranking of a query
 type RankedComic struct {
-	Comic ExplainWikiJson
+	Comic Comic
 	Rank  float64
 }
 
 // struct with the number of occurences of a term in a comic, along with the number of total comicß terms
 type TermFreq struct {
-	Comic           ExplainWikiJson
+	Comic           Comic
 	TermInComicFreq map[string]int // term -> # times term occurs in comic
 	TotalTerms      int
 }

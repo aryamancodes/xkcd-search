@@ -19,7 +19,7 @@ import (
 const currentComicURL = "https://xkcd.com/info.0.json"
 const explainationURL = "https://www.explainxkcd.com/wiki/api.php?action=parse&page=%d&prop=wikitext&format=json&redirects=1&origin=*"
 
-var explainChan = make(chan model.ExplainWikiJson, 250)
+var comicChan = make(chan model.Comic, 250)
 
 // get the latest comics number directly from the xkcd api
 func getCurrentComicNum() int {
@@ -39,61 +39,54 @@ func getCurrentComicNum() int {
 	return currentComic.Number
 }
 
-func fetchExplanation(num int) {
+func fetchComic(num int) {
 	explainURL := fmt.Sprintf(explainationURL, num)
-
 	var fetchedExplainWiki model.ExplainWikiJson
-
 	for {
-
 		//try to fetch explanation from wiki
 		resp, err := http.Get(explainURL)
 		if err != nil {
 			log.Fatalln(err)
 		}
-
 		//concurrent fetches may lead to >500 cloudflare errors
 		if resp.StatusCode != http.StatusOK {
 			time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
 			continue
 		} else {
-
 			//try to unmarshal response into json
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				log.Fatalln(err)
 			}
 			defer resp.Body.Close()
-
 			json.Unmarshal([]byte(body), &fetchedExplainWiki)
-
 			//even if we get status code 200, an internal wiki error might have occured -- needs refetching
-			if fetchedExplainWiki.Parse.Title == "" {
-				continue
-			} else {
+			if fetchedExplainWiki.Parse.Title != "" {
 				break
 			}
 		}
 	}
-
-	explainChan <- fetchedExplainWiki
+	comicWithExplanation := model.Comic{
+		Num:        num,
+		Transcript: fetchedExplainWiki.Parse.Wikitext.Content,
+	}
+	comicChan <- comicWithExplanation
 }
 
-// (concurrently) fetch all explanations based on the current comic number
-func FetchAllExplanations() []model.ExplainWikiJson {
+// (concurrently) fetch all comics+explanations based on the current comic number
+func FetchAllComics() []model.Comic {
 	latestComicNumber := getCurrentComicNum()
 	test := int(math.Max(250, float64(latestComicNumber)))
-	explanationsList := make([]model.ExplainWikiJson, 0)
+	comicList := make([]model.Comic, 0, latestComicNumber)
 
 	for i := 0; i < test; i++ {
-		go fetchExplanation(i + 1)
+		go fetchComic(i + 1)
 	}
 
 	for i := 0; i < test; i++ {
-		explanation := <-explainChan
-		db.StoreComics(i, explanation.Parse.Wikitext.Content)
-		explanationsList = append(explanationsList, explanation)
+		comicList = append(comicList, <-comicChan)
 	}
 
-	return explanationsList
+	db.BatchStoreComics(comicList)
+	return comicList
 }

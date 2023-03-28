@@ -7,20 +7,15 @@ import (
 	"regexp"
 	"strings"
 
-	"xkcd/db"
 	"xkcd/model"
 )
 
 var termFreqChan = make(chan model.TermFreq, 250)
 
-func computeTermFreq(terms []string, comic model.ExplainWikiJson, index int) {
+func computeTermFreq(terms []string, comic model.Comic) {
 	termFreq := make(map[string]int)
 	for _, term := range terms {
 		termFreq[term]++
-	}
-
-	for term, freq := range termFreq {
-		db.StoreTermFreq(index, term, freq, len(terms))
 	}
 
 	termFreqChan <- model.TermFreq{
@@ -31,37 +26,36 @@ func computeTermFreq(terms []string, comic model.ExplainWikiJson, index int) {
 }
 
 // (concurrently) calculate the number of occurences of a term and the total number of terms in a comic, for all comics
-func ComputeAllTermFreq(comics []model.ExplainWikiJson) []model.TermFreq {
+func ComputeAllTermFreq(comics []model.Comic) []model.TermFreq {
 	termFreqs := make([]model.TermFreq, 0)
-	for i, comic := range comics {
-		terms := regexp.MustCompile(`[^a-zA-Z0-9 ]+`).ReplaceAllString(comic.Parse.Title+" "+comic.Parse.Wikitext.Content, " ")
+	for _, comic := range comics {
+		terms := regexp.MustCompile(`[^a-zA-Z0-9 ]+`).ReplaceAllString(comic.Transcript, " ")
 		termsList := strings.Split(terms, " ")
-		go computeTermFreq(termsList, comic, i)
+		go computeTermFreq(termsList, comic)
 	}
 
 	for range comics {
 		termFreqs = append(termFreqs, <-termFreqChan)
 	}
-
+	//db.BatchStoreTermFreq(termFreqs)
 	return termFreqs
 }
 
 // calculate the number of comics each term occurs in and the total number of comics
-func ComputeAllComicFreq(comics []model.ExplainWikiJson, termFreqs []model.TermFreq) model.ComicFreq {
+func ComputeAllComicFreq(comics []model.Comic, termFreqs []model.TermFreq) model.ComicFreq {
 	comicFreq := make(map[string]int)
 	for _, termFreq := range termFreqs {
 		for term := range termFreq.TermInComicFreq {
 			comicFreq[term]++
 		}
 	}
-	for term, freq := range comicFreq {
-		db.StoreComicFreq(term, freq, len(comics))
-	}
 
-	return model.ComicFreq{
+	result := model.ComicFreq{
 		ComicsWithTermFreq: comicFreq,
 		TotalComics:        len(comics),
 	}
+	//db.BatchStoreComicFreq(result)
+	return result
 }
 
 func RankQuery(query string, allTerms []model.TermFreq, allComics model.ComicFreq) []model.RankedComic {
