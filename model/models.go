@@ -17,13 +17,13 @@ type Comic struct {
 
 // struct to store the ranking of a query
 type RankedComic struct {
-	Comic Comic
-	Rank  float64
+	ComicNum int
+	Rank     float64
 }
 
 // struct with the number of occurences of a term in a comic, along with the number of total comic terms
 type TermFreq struct {
-	Comic           Comic
+	ComicNum        int
 	TermInComicFreq map[string]int // term -> # times term occurs in comic
 	TotalTerms      int
 }

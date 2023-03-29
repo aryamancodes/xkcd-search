@@ -1,6 +1,4 @@
 -- source <path/to/file> in mysql to create the db
-SET GLOBAL max_connections = 501;
-
 SET FOREIGN_KEY_CHECKS=0; 
 DROP TABLE IF EXISTS comics; 
 SET FOREIGN_KEY_CHECKS=1;

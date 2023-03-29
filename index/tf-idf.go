@@ -13,14 +13,14 @@ import (
 
 var termFreqChan = make(chan model.TermFreq, 250)
 
-func computeTermFreq(terms []string, comic model.Comic) {
+func computeTermFreq(terms []string, comicNum int) {
 	termFreq := make(map[string]int)
 	for _, term := range terms {
 		termFreq[term]++
 	}
 
 	termFreqChan <- model.TermFreq{
-		Comic:           comic,
+		ComicNum:        comicNum,
 		TermInComicFreq: termFreq,
 		TotalTerms:      len(terms),
 	}
@@ -32,7 +32,7 @@ func ComputeAllTermFreq(comics []model.Comic) []model.TermFreq {
 	for _, comic := range comics {
 		terms := regexp.MustCompile(`[^a-zA-Z0-9 ]+`).ReplaceAllString(comic.Transcript, " ")
 		termsList := strings.Split(terms, " ")
-		go computeTermFreq(termsList, comic)
+		go computeTermFreq(termsList, comic.Num)
 	}
 
 	for range comics {
@@ -59,38 +59,41 @@ func ComputeAllComicFreq(comics []model.Comic, termFreqs []model.TermFreq) model
 	return result
 }
 
-func RankQuery(query string, allTerms []model.TermFreq, allComics model.ComicFreq) []model.RankedComic {
-	tf := func(queryTerm string, currComicTerms model.TermFreq) float64 {
-		queryTermInCurrComic := float64(currComicTerms.TermInComicFreq[queryTerm])
-		if queryTermInCurrComic == 0 {
-			return 0
-		}
-
-		// ln normalised tf to favour distinct query terms matching fewer times rather than the same query terms matching many times
-		// ref: https://ecommons.cornell.edu/bitstream/handle/1813/7281/97-1626.pdf?sequence=1 (page 8)
-		return 1 + math.Log(queryTermInCurrComic)
+func tf(queryTerm string, currComicTerms model.TermFreq) float64 {
+	queryTermInCurrComic := float64(currComicTerms.TermInComicFreq[queryTerm])
+	if queryTermInCurrComic == 0 {
+		return 0
 	}
 
-	idf := func(queryTerm string) float64 {
-		comicsWithQueryTerm := math.Max(float64(allComics.ComicsWithTermFreq[queryTerm]), 1)
-		totalComics := float64(allComics.TotalComics)
-		return math.Log10(totalComics / comicsWithQueryTerm)
-	}
+	// ln normalised tf to favour distinct query terms matching fewer times rather than the same query terms matching many times
+	// ref: https://ecommons.cornell.edu/bitstream/handle/1813/7281/97-1626.pdf?sequence=1 (page 8)
+	return 1 + math.Log(queryTermInCurrComic)
+}
 
+func idf(queryTerm string, allComics model.ComicFreq) float64 {
+	comicsWithQueryTerm := math.Max(float64(allComics.ComicsWithTermFreq[queryTerm]), 1)
+	totalComics := float64(allComics.TotalComics)
+	return math.Log10(totalComics / comicsWithQueryTerm)
+}
+
+func RankQuery(query string, allComics model.ComicFreq) []model.RankedComic {
 	rankings := make([]model.RankedComic, 0)
 	queryTerms := strings.Split(query, " ")
+	// fetch only the tf of only the comics that contain the query terms
+	// ie. map of [comic (containing atleast one query term)] -> termFreq of comic
+	queryTermFreq := db.GetTermFreq(queryTerms)
 
 	for i := 0; i < allComics.TotalComics; i++ {
 		rank := 0.0
 		for _, queryTerm := range queryTerms {
-			rank += tf(queryTerm, allTerms[i]) * idf(queryTerm)
+			rank += tf(queryTerm, queryTermFreq[i]) * idf(queryTerm, allComics)
 		}
 
 		//only return comics whose rank isn't 0
 		if rank > 0 {
 			rankings = append(rankings, model.RankedComic{
-				Comic: allTerms[i].Comic,
-				Rank:  rank,
+				ComicNum: i,
+				Rank:     rank,
 			})
 		}
 	}
