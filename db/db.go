@@ -4,11 +4,17 @@ import (
 	"database/sql"
 	"log"
 	"os"
+	"xkcd/model"
 
 	"github.com/go-sql-driver/mysql"
+	mysqlGorm "gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
-var db *sql.DB
+const BATCH_SIZE = 6000
+
+var db *gorm.DB
 var err error
 
 func Connect() {
@@ -19,38 +25,60 @@ func Connect() {
 		Addr:   "127.0.0.1:3306",
 		DBName: "xkcd_search",
 	}
-	db, err = sql.Open("mysql", cfg.FormatDSN())
+	sqlDB, err := sql.Open("mysql", cfg.FormatDSN())
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = db.Ping()
+	db, err = gorm.Open(mysqlGorm.New(mysqlGorm.Config{
+		Conn: sqlDB,
+	}), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	db.SetMaxOpenConns(15)
 	log.Println("Connected @ port 3306!")
 }
 
-// TODO: Batch insert!!
-func StoreComics(num int, text string) {
-	_, err := db.Exec("INSERT INTO comics (num, transcript) VALUES (?,?)", num, text)
-	if err != nil {
-		log.Fatal(err)
+func BatchStoreComics(comics []model.Comic) {
+	result := db.Create(&comics)
+	if result.Error != nil {
+		log.Fatal(result.Error)
 	}
 }
 
-func StoreTermFreq(num int, term string, freq int, total int) {
-	_, err := db.Exec("INSERT INTO term_frequency (comic_num, term, termFreq, totalTerms) VALUES (?,?,?,?)", num, term, freq, total)
-	if err != nil {
-		log.Fatal(err)
+func BatchStoreTermFreq(termFreqs []model.TermFreq) {
+	termFreqList := make([]model.TermFreqDTO, 0, len(termFreqs))
+	for _, termFreq := range termFreqs {
+		for term, freq := range termFreq.TermInComicFreq {
+			termFreq := model.TermFreqDTO{
+				ComicNum: termFreq.Comic.Num,
+				Term:     term,
+				Freq:     freq,
+			}
+			termFreqList = append(termFreqList, termFreq)
+		}
+	}
+	result := db.CreateInBatches(&termFreqList, BATCH_SIZE)
+	if result.Error != nil {
+		log.Fatal(result.Error)
 	}
 }
 
-func StoreComicFreq(term string, freq int, total int) {
-	_, err := db.Exec("INSERT INTO comic_frequency (term, comicFreq, totalComics) VALUES (?,?,?)", term, freq, total)
-	if err != nil {
-		log.Fatal(err)
+func BatchStoreComicFreq(comicFreqs model.ComicFreq) {
+	comicFreqList := make([]model.ComicFreqDTO, 0, len(comicFreqs.ComicsWithTermFreq))
+	for term, freq := range comicFreqs.ComicsWithTermFreq {
+		comicFreq := model.ComicFreqDTO{
+			Term: term,
+			Freq: freq,
+		}
+		comicFreqList = append(comicFreqList, comicFreq)
+	}
+	db.Logger.LogMode(logger.Info)
+	result := db.CreateInBatches(&comicFreqList, BATCH_SIZE)
+	if result.Error != nil {
+		log.Fatal(result.Error)
 	}
 }

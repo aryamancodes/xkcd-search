@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"xkcd/db"
 	"xkcd/model"
 )
 
@@ -37,7 +38,7 @@ func ComputeAllTermFreq(comics []model.Comic) []model.TermFreq {
 	for range comics {
 		termFreqs = append(termFreqs, <-termFreqChan)
 	}
-	//db.BatchStoreTermFreq(termFreqs)
+	db.BatchStoreTermFreq(termFreqs)
 	return termFreqs
 }
 
@@ -54,7 +55,7 @@ func ComputeAllComicFreq(comics []model.Comic, termFreqs []model.TermFreq) model
 		ComicsWithTermFreq: comicFreq,
 		TotalComics:        len(comics),
 	}
-	//db.BatchStoreComicFreq(result)
+	db.BatchStoreComicFreq(result)
 	return result
 }
 

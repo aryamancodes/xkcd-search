@@ -7,13 +7,9 @@ import (
 
 func main() {
 	db.Connect()
-	comics := index.FetchAllExplanations()
-
+	comics := index.FetchAllComics()
 	tf := index.ComputeAllTermFreq(comics)
-
 	index.ComputeAllComicFreq(comics, tf)
-	// fmt.Fprintf(os.Stderr, "\nTERM FREQ LOOKS LIKE: %d\n", len(tf))
-	// fmt.Fprintf(os.Stderr, "\nDOC FREQ LOOKS LIKE: %+v\n", df.TotalComics)
 
 	// for {
 	// 	fmt.Println("ENTER A QUERY:")
@@ -35,7 +31,7 @@ func main() {
 	// 	}
 
 	// 	for i, ranked := range rankings {
-	// 		fmt.Printf("\n%d) %s (rank: %f) \n", i, ranked.Comic.Parse.Title, ranked.Rank)
+	// 		fmt.Printf("\n%d) %s (rank: %f) \n", i, ranked.Comic.Transcript, ranked.Rank)
 	// 	}
-	// }
+	//}
 }
