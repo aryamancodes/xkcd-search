@@ -7,9 +7,9 @@ type Tabler interface {
 
 // comic struct used for indexing
 type Comic struct {
-	Num int
-	//Date        string
-	//Title       string
+	Num        int
+	Title      string
+	AltText    string
 	Transcript string
 	//Explanation string
 	//Image       string
