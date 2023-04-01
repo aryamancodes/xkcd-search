@@ -10,9 +10,9 @@ import (
 	"xkcd/model"
 )
 
-func parseMetaData(metadata string, comic model.ExplainWikiJson) model.Comic {
+func parseMetaData(metadata []string, comic model.ExplainWikiJson) model.Comic {
 	var numString, title, alt string
-	for _, line := range strings.Split(metadata, "\n") {
+	for _, line := range metadata {
 		if regexp.MustCompile(`\|\s?number\s*=`).Match([]byte(line)) {
 			numString = strings.Split(line, "=")[1]
 		}
@@ -29,6 +29,7 @@ func parseMetaData(metadata string, comic model.ExplainWikiJson) model.Comic {
 	numString = strings.TrimSpace(numString)
 	num, err := strconv.Atoi(numString)
 	if err != nil {
+		log.Println(comic)
 		log.Fatalln(err)
 	}
 	title = strings.Replace(title, "title", "", 1)
@@ -55,10 +56,10 @@ func parseSection(section string) (string, bool) {
 
 func Parse(comic model.ExplainWikiJson) model.Comic {
 	content := comic.Parse.Wikitext.Content
-	metadataBlock := regexp.MustCompile(`(?s)\{\{.*\}\}.*==\s?Explanation`).FindString(content)
+	//metadata is always within the first 10 lines
+	metadataBlock := strings.Split(content, "\n")[:10]
 	parsedComic := parseMetaData(metadataBlock, comic)
 
-	content = strings.Replace(content, metadataBlock, "", 1)
 	transcriptBlock := regexp.MustCompile(`(?s)==\s?Transcript\s?==(.*){{comic discussion}}`).FindString(content)
 	transcript, transcriptIncomplete := parseSection(transcriptBlock)
 
