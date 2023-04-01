@@ -7,12 +7,12 @@ type Tabler interface {
 
 // comic struct used for indexing
 type Comic struct {
-	Num        int
-	Title      string
-	AltText    string
-	Transcript string
-	//Explanation string
-	//Image       string
+	Num         int
+	Title       string
+	AltText     string
+	Transcript  string
+	Explanation string
+	Incomplete  bool `gorm:"default:false"`
 }
 
 // struct to store the ranking of a query

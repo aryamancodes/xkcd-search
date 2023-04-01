@@ -3,7 +3,6 @@
 package nlp
 
 import (
-	"fmt"
 	"log"
 	"regexp"
 	"strconv"
@@ -11,24 +10,29 @@ import (
 	"xkcd/model"
 )
 
-func parseMetaData(metadata string) model.Comic {
-	metadata = strings.TrimSuffix(metadata, "==")
-	metadata = strings.TrimSpace(metadata)
-	metadataSplit := strings.Split(metadata, "|")
+func parseMetaData(metadata string, comic model.ExplainWikiJson) model.Comic {
+	var numString, title, alt string
+	for _, line := range strings.Split(metadata, "\n") {
+		if regexp.MustCompile(`\|\s?number\s*=`).Match([]byte(line)) {
+			numString = strings.Split(line, "=")[1]
+		}
 
-	numString := strings.Split(metadataSplit[1], "=")[1]
-	numString = regexp.MustCompile("[0-9]+").FindString(numString)
+		if strings.Contains(line, "| title ") {
+			title = line
+		}
+
+		if strings.Contains(line, "| titletext ") {
+			alt = line
+			break
+		}
+	}
+	numString = strings.TrimSpace(numString)
 	num, err := strconv.Atoi(numString)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
-
-	title := strings.Split(metadataSplit[3], "=")[1]
-	title = strings.TrimSpace(title)
-
-	alt := strings.Split(metadataSplit[7], "=")[1]
-	alt = strings.TrimSuffix(alt, "}}")
-	alt = strings.TrimSpace(alt)
+	title = strings.Replace(title, "title", "", 1)
+	alt = strings.Replace(alt, "titletext", "", 1)
 
 	return model.Comic{
 		Num:     num,
@@ -37,18 +41,33 @@ func parseMetaData(metadata string) model.Comic {
 	}
 }
 
-// func parseTranscript(transcript string) string {
+func parseSection(section string) (string, bool) {
+	//check for incomplete section and remove if needed
+	incompleteRegex := regexp.MustCompile(`\{\{incomplete.* soon.\}\}`)
+	isIncomplete := incompleteRegex.Match([]byte(section))
+	if isIncomplete {
+		section = incompleteRegex.ReplaceAllString(section, "")
+	}
+	//remove frequent sections found in the wiki sections such as headings, links and bullet points
+	section = regexp.MustCompile(`(\{\{)|(\}\})|(\[\[)|(\]\])|(==)|:|\||\*`).ReplaceAllString(section, " ")
+	return section, isIncomplete
+}
 
-// }
+func Parse(comic model.ExplainWikiJson) model.Comic {
+	content := comic.Parse.Wikitext.Content
+	metadataBlock := regexp.MustCompile(`(?s)\{\{.*\}\}.*==\s?Explanation`).FindString(content)
+	parsedComic := parseMetaData(metadataBlock, comic)
 
-func Parse(test model.ExplainWikiJson) {
-	metadataBlock := regexp.MustCompile(`(?s){{.*}}..==`).FindString(test.Parse.Wikitext.Content)
-	comic := parseMetaData(metadataBlock)
-	// transcriptBlock :=
+	content = strings.Replace(content, metadataBlock, "", 1)
+	transcriptBlock := regexp.MustCompile(`(?s)==\s?Transcript\s?==(.*){{comic discussion}}`).FindString(content)
+	transcript, transcriptIncomplete := parseSection(transcriptBlock)
 
-	// transcript := parseTranscript("explain")
-	// explanation := parseTranscript("transcript")
+	content = strings.Replace(content, transcriptBlock, "", 1)
+	explanation, explanationIncomplete := parseSection(content)
 
-	// metaComic.Transcript = transcript
-	fmt.Printf("%+v", comic)
+	parsedComic.Transcript = CleanContent(transcript)
+	parsedComic.Explanation = CleanContent(explanation)
+	parsedComic.Incomplete = transcriptIncomplete || explanationIncomplete
+
+	return parsedComic
 }
