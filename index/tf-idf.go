@@ -17,19 +17,19 @@ func computeTermFreq(comic model.Comic, comicNum int) {
 	totalTerms := 0
 
 	//weight terms in the following order: title > alt > transcript > explain
-	for _, titleTerm := range strings.Split(comic.Title, " ") {
+	for _, titleTerm := range strings.Fields(comic.Title) {
 		termFreq[titleTerm] += 4
 		totalTerms++
 	}
-	for _, altTerm := range strings.Split(comic.AltText, " ") {
+	for _, altTerm := range strings.Fields(comic.AltText) {
 		termFreq[altTerm] += 3
 		totalTerms++
 	}
-	for _, transcriptTerm := range strings.Split(comic.Transcript, " ") {
+	for _, transcriptTerm := range strings.Fields(comic.Transcript) {
 		termFreq[transcriptTerm] += 2
 		totalTerms++
 	}
-	for _, explainTerm := range strings.Split(comic.Explanation, " ") {
+	for _, explainTerm := range strings.Fields(comic.Explanation) {
 		termFreq[explainTerm]++
 		totalTerms++
 	}
