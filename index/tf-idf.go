@@ -4,7 +4,6 @@ package index
 
 import (
 	"math"
-	"regexp"
 	"strings"
 
 	"xkcd/db"
@@ -13,16 +12,32 @@ import (
 
 var termFreqChan = make(chan model.TermFreq, 250)
 
-func computeTermFreq(terms []string, comicNum int) {
+func computeTermFreq(comic model.Comic, comicNum int) {
 	termFreq := make(map[string]int)
-	for _, term := range terms {
-		termFreq[term]++
+	totalTerms := 0
+
+	//weight terms in the following order: title > alt > transcript > explain
+	for _, titleTerm := range strings.Split(comic.Title, " ") {
+		termFreq[titleTerm] += 4
+		totalTerms++
+	}
+	for _, altTerm := range strings.Split(comic.AltText, " ") {
+		termFreq[altTerm] += 3
+		totalTerms++
+	}
+	for _, transcriptTerm := range strings.Split(comic.Transcript, " ") {
+		termFreq[transcriptTerm] += 2
+		totalTerms++
+	}
+	for _, explainTerm := range strings.Split(comic.Explanation, " ") {
+		termFreq[explainTerm]++
+		totalTerms++
 	}
 
 	termFreqChan <- model.TermFreq{
 		ComicNum:        comicNum,
 		TermInComicFreq: termFreq,
-		TotalTerms:      len(terms),
+		TotalTerms:      totalTerms,
 	}
 }
 
@@ -30,9 +45,7 @@ func computeTermFreq(terms []string, comicNum int) {
 func ComputeAllTermFreq(comics []model.Comic) []model.TermFreq {
 	termFreqs := make([]model.TermFreq, 0)
 	for _, comic := range comics {
-		terms := regexp.MustCompile(`[^a-zA-Z0-9 ]+`).ReplaceAllString(comic.Transcript, " ")
-		termsList := strings.Split(terms, " ")
-		go computeTermFreq(termsList, comic.Num)
+		go computeTermFreq(comic, comic.Num)
 	}
 
 	for range comics {
@@ -79,7 +92,7 @@ func idf(queryTerm string, allComics model.ComicFreq) float64 {
 func RankQuery(query string, allComics model.ComicFreq) []model.RankedComic {
 	rankings := make([]model.RankedComic, 0)
 	queryTerms := strings.Split(query, " ")
-	// fetch only the tf of only the comics that contain the query terms
+	// fetch only the tf of comics that contain the query terms
 	// ie. map of [comic (containing atleast one query term)] -> termFreq of comic
 	queryTermFreq := db.GetTermFreq(queryTerms)
 

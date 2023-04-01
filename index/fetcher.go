@@ -14,16 +14,17 @@ import (
 
 	"xkcd/db"
 	"xkcd/model"
+	"xkcd/nlp"
 )
 
-const currentComicURL = "https://xkcd.com/info.0.json"
-const explainationURL = "https://www.explainxkcd.com/wiki/api.php?action=parse&page=%d&prop=wikitext&format=json&redirects=1&origin=*"
+const CURR_COMIC_URL = "https://xkcd.com/info.0.json"
+const EXPLAIN_URL = "https://www.explainxkcd.com/wiki/api.php?action=parse&page=%d&prop=wikitext&format=json&redirects=1&origin=*"
 
 var comicChan = make(chan model.Comic, 250)
 
-// get the latest comics number directly from the xkcd api
+// get the latest comic's number directly from the xkcd api
 func getCurrentComicNum() int {
-	resp, err := http.Get(currentComicURL)
+	resp, err := http.Get(CURR_COMIC_URL)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -40,7 +41,7 @@ func getCurrentComicNum() int {
 }
 
 func fetchComic(num int) {
-	explainURL := fmt.Sprintf(explainationURL, num)
+	explainURL := fmt.Sprintf(EXPLAIN_URL, num)
 	var fetchedExplainWiki model.ExplainWikiJson
 	for {
 		//try to fetch explanation from wiki
@@ -66,11 +67,7 @@ func fetchComic(num int) {
 			}
 		}
 	}
-	comicWithExplanation := model.Comic{
-		Num:        num,
-		Transcript: fetchedExplainWiki.Parse.Wikitext.Content,
-	}
-	comicChan <- comicWithExplanation
+	comicChan <- nlp.Parse(fetchedExplainWiki)
 }
 
 // (concurrently) fetch all comics+explanations based on the current comic number

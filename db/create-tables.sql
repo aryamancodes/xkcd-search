@@ -4,7 +4,11 @@ DROP TABLE IF EXISTS comics;
 SET FOREIGN_KEY_CHECKS=1;
 CREATE TABLE comics (
   num INTEGER NOT NULL UNIQUE PRIMARY KEY,
-  transcript LONGTEXT
+  title TEXT, 
+  alt_text TEXT, 
+  transcript LONGTEXT, 
+  explanation LONGTEXT, 
+  incomplete BOOL
 );
 
 DROP TABLE IF EXISTS term_frequency;
