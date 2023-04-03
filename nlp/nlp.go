@@ -1,5 +1,4 @@
-// Functions to stem words to their roots, decode special chars
-// and find synonyms for words
+// Functions to stem words to their roots, decode special chars and add autocorrect functionality
 package nlp
 
 import (
@@ -10,13 +9,16 @@ import (
 	"github.com/mozillazg/go-unidecode"
 )
 
-func CleanContent(content string) string {
+// return a cleaned and stemmed version of content
+func CleanAndStem(content string) (string, string) {
 	cleaned := ""
-	for _, word := range strings.Split(content, " ") {
+	stemmed := ""
+	for _, word := range strings.Fields(content) {
 		word = removeSpecialCharacters(word)
-		cleaned += stem(word) + " "
+		cleaned += word + " "
+		stemmed += stem(word) + " "
 	}
-	return cleaned
+	return cleaned, stemmed
 }
 
 func stem(word string) string {
@@ -27,5 +29,6 @@ func stem(word string) string {
 func removeSpecialCharacters(word string) string {
 	word = unidecode.Unidecode(word)
 	word = regexp.MustCompile(`[^a-zA-Z0-9 ]+`).ReplaceAllString(word, "")
+	word = strings.ToLower(word)
 	return word
 }

@@ -3,6 +3,7 @@
 package index
 
 import (
+	"fmt"
 	"math"
 	"strings"
 
@@ -14,30 +15,25 @@ var termFreqChan = make(chan model.TermFreq, 250)
 
 func computeTermFreq(comic model.Comic, comicNum int) {
 	termFreq := make(map[string]int)
-	totalTerms := 0
 
 	//weight terms in the following order: title > alt > transcript > explain
 	for _, titleTerm := range strings.Fields(comic.Title) {
 		termFreq[titleTerm] += 4
-		totalTerms++
 	}
 	for _, altTerm := range strings.Fields(comic.AltText) {
 		termFreq[altTerm] += 3
-		totalTerms++
 	}
 	for _, transcriptTerm := range strings.Fields(comic.Transcript) {
 		termFreq[transcriptTerm] += 2
-		totalTerms++
 	}
 	for _, explainTerm := range strings.Fields(comic.Explanation) {
 		termFreq[explainTerm]++
-		totalTerms++
 	}
 
 	termFreqChan <- model.TermFreq{
 		ComicNum:        comicNum,
 		TermInComicFreq: termFreq,
-		TotalTerms:      totalTerms,
+		TotalTerms:      len(termFreq),
 	}
 }
 
@@ -51,6 +47,7 @@ func ComputeAllTermFreq(comics []model.Comic) []model.TermFreq {
 	for range comics {
 		termFreqs = append(termFreqs, <-termFreqChan)
 	}
+	fmt.Println("FETCHED ALL TFS")
 	db.BatchStoreTermFreq(termFreqs)
 	return termFreqs
 }
@@ -68,6 +65,7 @@ func ComputeAllComicFreq(comics []model.Comic, termFreqs []model.TermFreq) model
 		ComicsWithTermFreq: comicFreq,
 		TotalComics:        len(comics),
 	}
+	fmt.Println("FETCHED ALL DFS")
 	db.BatchStoreComicFreq(result)
 	return result
 }

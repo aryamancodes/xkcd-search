@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-const BATCH_SIZE = 6000
+const BATCH_SIZE = 8000
 
 var db *gorm.DB
 var err error

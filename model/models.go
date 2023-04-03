@@ -5,14 +5,19 @@ type Tabler interface {
 	TableName() string
 }
 
-// comic struct used for indexing
+// comic struct used for indexing. The raw versions of fields are
+// only cleaned whereas the non-raw version are cleaned and stemmed
 type Comic struct {
-	Num         int
-	Title       string
-	AltText     string
-	Transcript  string
-	Explanation string
-	Incomplete  bool `gorm:"default:false"`
+	Num            int
+	Title          string
+	TitleRaw       string
+	AltText        string
+	AltTextRaw     string
+	Transcript     string
+	TranscriptRaw  string
+	Explanation    string
+	ExplanationRaw string
+	Incomplete     bool `gorm:"default:false"`
 }
 
 // struct to store the ranking of a query
@@ -24,7 +29,7 @@ type RankedComic struct {
 // struct with the number of occurences of a term in a comic, along with the number of total comic terms
 type TermFreq struct {
 	ComicNum        int
-	TermInComicFreq map[string]int // term -> # times term occurs in comic
+	TermInComicFreq map[string]int // stemmed term -> # times term occurs in comic
 	TotalTerms      int
 }
 
@@ -41,7 +46,7 @@ func (TermFreqDTO) TableName() string {
 
 // struct used to store number of comics a term occurs in, for all terms, along with the number of comics
 type ComicFreq struct {
-	ComicsWithTermFreq map[string]int // term -> # comics with term
+	ComicsWithTermFreq map[string]int // stemmed term -> # comics with term
 	TotalComics        int
 }
 

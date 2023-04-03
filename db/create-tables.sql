@@ -5,9 +5,13 @@ SET FOREIGN_KEY_CHECKS=1;
 CREATE TABLE comics (
   num INTEGER NOT NULL UNIQUE PRIMARY KEY,
   title TEXT, 
+  title_raw TEXT, 
   alt_text TEXT, 
+  alt_text_raw TEXT, 
   transcript LONGTEXT, 
+  transcript_raw LONGTEXT, 
   explanation LONGTEXT, 
+  explanation_raw LONGTEXT, 
   incomplete BOOL
 );
 

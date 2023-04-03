@@ -1,13 +1,15 @@
 // Functions to parse fetched explanations into stemmed comic structs
 
-package nlp
+package index
 
 import (
 	"log"
 	"regexp"
 	"strconv"
 	"strings"
+
 	"xkcd/model"
+	"xkcd/nlp"
 )
 
 func parseMetaData(metadata []string, comic model.ExplainWikiJson) model.Comic {
@@ -35,10 +37,15 @@ func parseMetaData(metadata []string, comic model.ExplainWikiJson) model.Comic {
 	title = strings.Replace(title, "title", "", 1)
 	alt = strings.Replace(alt, "titletext", "", 1)
 
+	titleRaw, title := nlp.CleanAndStem(title)
+	altRaw, alt := nlp.CleanAndStem(alt)
+
 	return model.Comic{
-		Num:     num,
-		Title:   CleanContent(title),
-		AltText: CleanContent(alt),
+		Num:        num,
+		TitleRaw:   titleRaw,
+		Title:      title,
+		AltTextRaw: altRaw,
+		AltText:    alt,
 	}
 }
 
@@ -64,10 +71,13 @@ func Parse(comic model.ExplainWikiJson) model.Comic {
 	transcript, transcriptIncomplete := parseSection(transcriptBlock)
 
 	content = strings.Replace(content, transcriptBlock, "", 1)
+	for _, metadataSection := range metadataBlock {
+		content = strings.Replace(content, metadataSection, "", 1)
+	}
 	explanation, explanationIncomplete := parseSection(content)
 
-	parsedComic.Transcript = CleanContent(transcript)
-	parsedComic.Explanation = CleanContent(explanation)
+	parsedComic.TranscriptRaw, parsedComic.Transcript = nlp.CleanAndStem(transcript)
+	parsedComic.ExplanationRaw, parsedComic.Explanation = nlp.CleanAndStem(explanation)
 	parsedComic.Incomplete = transcriptIncomplete || explanationIncomplete
 
 	return parsedComic

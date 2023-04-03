@@ -14,7 +14,6 @@ import (
 
 	"xkcd/db"
 	"xkcd/model"
-	"xkcd/nlp"
 )
 
 const CURR_COMIC_URL = "https://xkcd.com/info.0.json"
@@ -67,7 +66,7 @@ func fetchComic(num int) {
 			}
 		}
 	}
-	comicChan <- nlp.Parse(fetchedExplainWiki)
+	comicChan <- Parse(fetchedExplainWiki)
 }
 
 // (concurrently) fetch all comics+explanations based on the current comic number
