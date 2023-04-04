@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"os"
+	"strings"
 	"xkcd/model"
 
 	"github.com/go-sql-driver/mysql"
@@ -59,6 +60,71 @@ func GetComics() []model.Comic {
 	log.Println("GOT ALL COMICS")
 	return comics
 }
+
+func GetRawWords() []string {
+	var title []string
+	var transcript []string
+	var alt []string
+	var explain []string
+	err := db.Table("comics").Select("title_raw").Find(&title).Error
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = db.Table("comics").Select("transcript_raw").Find(&transcript).Error
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = db.Table("comics").Select("alt_text_raw").Find(&alt).Error
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = db.Table("comics").Select("explanation_raw").Find(&explain).Error
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	rawString := strings.Join(transcript, " ") + " "
+	rawString += strings.Join(title, " ") + " "
+	rawString += strings.Join(alt, " ") + " "
+	rawString += strings.Join(explain, " ") + " "
+	rawWords := strings.Fields(rawString)
+	return removeDuplicateStr(rawWords)
+}
+
+func removeDuplicateStr(strSlice []string) []string {
+	allKeys := make(map[string]bool)
+	list := []string{}
+	for _, item := range strSlice {
+		if _, value := allKeys[item]; !value {
+			allKeys[item] = true
+			list = append(list, item)
+		}
+	}
+	return list
+}
+
+// type combinedRaw struct {
+// 	TitleRaw      []string
+// 	AltTextRaw    []string
+// 	TranscriptRaw []string
+// }
+// var combinedWords []combinedRaw
+// var rawWords []string
+
+// err := db.Table("comics").Select("title_raw, alt_text_raw, transcript_raw").Find(&combinedWords).Error
+// if err != nil {
+// 	log.Fatal(err)
+// }
+
+// for _, combined := range combinedWords {
+// 	rawWords = append(rawWords, strings.Fields(combined.AltTextRaw)...)
+// }
+
+// return rawWords
+//}
 
 func BatchStoreTermFreq(termFreqs []model.TermFreq) {
 	termFreqList := make([]model.TermFreqDTO, 0, len(termFreqs))

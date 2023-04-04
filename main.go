@@ -1,15 +1,29 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
+	"os"
 	"xkcd/db"
-	"xkcd/index"
+	"xkcd/nlp"
 )
 
 func main() {
 	db.Connect()
-	comics := index.FetchAllComics()
-	tf := index.ComputeAllTermFreq(comics)
-	index.ComputeAllComicFreq(comics, tf)
+	words := db.GetRawWords()
+	model := nlp.TrainModel(words)
+	for {
+		fmt.Println("ENTER A QUERY:")
+		var query string
+		scanner := bufio.NewScanner(os.Stdin)
+		if scanner.Scan() {
+			query = scanner.Text()
+		}
+		fmt.Printf("CORRECTED TO %s\n", model.SpellCheckSuggestions(query, 5))
+
+	}
+	// tf := index.ComputeAllTermFreq(comics)
+	// index.ComputeAllComicFreq(comics, tf)
 	// for {
 	// 	fmt.Println("ENTER A QUERY:")
 	// 	var query string
