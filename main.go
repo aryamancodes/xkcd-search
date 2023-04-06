@@ -14,9 +14,11 @@ import (
 
 func main() {
 	db.Connect()
+	db.GetComics()
+	//comics := index.FetchAllComics()
+	df := db.GetComicFreq()
 	words := db.GetRawWords()
 	model := nlp.TrainModel(words)
-	df := db.GetComicFreq()
 
 	fmt.Println("ENTER A QUERY:")
 
@@ -35,8 +37,8 @@ func main() {
 			log.Fatal(err)
 		}
 	}
-	_, query = nlp.CleanAndStem(query)
-	rankings := index.RankQuery(query, df)
+	rawQuery, stemQuery := nlp.CleanAndStem(query)
+	rankings := index.RankQuery(rawQuery, stemQuery, df)
 	sort.Slice(rankings, func(i, j int) bool {
 		return rankings[i].Rank >= rankings[j].Rank
 	})

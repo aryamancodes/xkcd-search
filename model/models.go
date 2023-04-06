@@ -30,7 +30,8 @@ type RankedComic struct {
 // struct with the number of occurences of a term in a comic, along with the number of total comic terms
 type TermFreq struct {
 	ComicNum        int
-	TermInComicFreq map[string]int // stemmed term -> # times term occurs in comic
+	TermInComicFreq map[string]int    // stemmed term -> # times term occurs in comic
+	StemToRawMap    map[string]string // stemmed term -> string of raw terms with same stem
 	TotalTerms      int
 }
 
@@ -38,6 +39,7 @@ type TermFreq struct {
 type TermFreqDTO struct {
 	ComicNum int
 	Term     string
+	TermsRaw string
 	Freq     int
 }
 

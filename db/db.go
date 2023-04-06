@@ -101,6 +101,7 @@ func BatchStoreTermFreq(termFreqs []model.TermFreq) {
 			termFreq := model.TermFreqDTO{
 				ComicNum: termFreq.ComicNum,
 				Term:     term,
+				TermsRaw: termFreq.StemToRawMap[term],
 				Freq:     freq,
 			}
 			termFreqList = append(termFreqList, termFreq)
@@ -126,18 +127,22 @@ func GetTermFreq(queryTerms []string) map[int]model.TermFreq {
 	// until the a new comic_num is found (ie all prev comic terms have been stored)
 	prevNum := 0
 	termFreq := make(map[string]int)
+	stemRootMap := make(map[string]string)
 	for i, row := range termFeqDB {
 		if row.ComicNum != prevNum || i == len(termFeqDB) {
 			completedTF := model.TermFreq{
 				ComicNum:        prevNum,
 				TermInComicFreq: termFreq,
+				StemToRawMap:    stemRootMap,
 				TotalTerms:      len(termFreq),
 			}
 			termFreqList[prevNum] = completedTF
 			prevNum = row.ComicNum
 			termFreq = make(map[string]int)
+			stemRootMap = make(map[string]string)
 		}
 		termFreq[row.Term] = row.Freq
+		stemRootMap[row.Term] = row.TermsRaw
 	}
 	log.Println("GOT ALL TFS")
 	return termFreqList

@@ -16,16 +16,30 @@ var termFreqChan = make(chan model.TermFreq, 250)
 func computeTermFreq(comic model.Comic, comicNum int) {
 	termFreq := make(map[string]int)
 
+	//map each stem term to a string of raw terms for title, alt and transcript sections only.
+	//This uses the fact that raw and stemmed sections lengths are always the same
+	stemToRawMap := make(map[string]string)
+	var currRawSection []string
+
 	//weight terms in the following order: title > alt > transcript > explain
-	for _, titleTerm := range strings.Fields(comic.Title) {
+	currRawSection = strings.Fields(comic.TitleRaw)
+	for i, titleTerm := range strings.Fields(comic.Title) {
 		termFreq[titleTerm] += 4
+		stemToRawMap[titleTerm] += " " + currRawSection[i]
 	}
-	for _, altTerm := range strings.Fields(comic.AltText) {
+
+	currRawSection = strings.Fields(comic.AltTextRaw)
+	for i, altTerm := range strings.Fields(comic.AltText) {
 		termFreq[altTerm] += 3
+		stemToRawMap[altTerm] += " " + currRawSection[i]
 	}
-	for _, transcriptTerm := range strings.Fields(comic.Transcript) {
+
+	currRawSection = strings.Fields(comic.TranscriptRaw)
+	for i, transcriptTerm := range strings.Fields(comic.Transcript) {
 		termFreq[transcriptTerm] += 2
+		stemToRawMap[transcriptTerm] += " " + currRawSection[i]
 	}
+
 	for _, explainTerm := range strings.Fields(comic.Explanation) {
 		termFreq[explainTerm]++
 	}
@@ -33,6 +47,7 @@ func computeTermFreq(comic model.Comic, comicNum int) {
 	termFreqChan <- model.TermFreq{
 		ComicNum:        comicNum,
 		TermInComicFreq: termFreq,
+		StemToRawMap:    stemToRawMap,
 		TotalTerms:      len(termFreq),
 	}
 }
@@ -70,8 +85,9 @@ func ComputeAllComicFreq(comics []model.Comic, termFreqs []model.TermFreq) model
 	return result
 }
 
-func tf(queryTerm string, currComicTerms model.TermFreq) float64 {
-	queryTermInCurrComic := float64(currComicTerms.TermInComicFreq[queryTerm])
+func tf(stemTerm string, rawTerm string, currComicTerms model.TermFreq) float64 {
+	exactMatches := strings.Count(currComicTerms.StemToRawMap[stemTerm], rawTerm)
+	queryTermInCurrComic := float64(currComicTerms.TermInComicFreq[stemTerm] * (1 + exactMatches))
 	if queryTermInCurrComic == 0 {
 		return 0
 	}
@@ -87,17 +103,18 @@ func idf(queryTerm string, allComics model.ComicFreq) float64 {
 	return math.Log10(totalComics / comicsWithQueryTerm)
 }
 
-func RankQuery(query string, allComics model.ComicFreq) []model.RankedComic {
+func RankQuery(rawQuery string, stemQuery string, allComics model.ComicFreq) []model.RankedComic {
 	rankings := make([]model.RankedComic, 0)
-	queryTerms := strings.Fields(query)
+	stemQueryTerms := strings.Fields(stemQuery)
 	// fetch only the tf of comics that contain the query terms
-	// ie. map of [comic (containing atleast one query term)] -> termFreq of comic
-	queryTermFreq := db.GetTermFreq(queryTerms)
+	// ie. map of [comic num (containing atleast one query term)] -> termFreq of comic
+	queryTermFreq := db.GetTermFreq(stemQueryTerms)
+	rawQueryTerms := strings.Fields(rawQuery)
 
 	for i := 0; i < allComics.TotalComics; i++ {
 		rank := 0.0
-		for _, queryTerm := range queryTerms {
-			rank += tf(queryTerm, queryTermFreq[i]) * idf(queryTerm, allComics)
+		for j, stemTerm := range stemQueryTerms {
+			rank += tf(stemTerm, rawQueryTerms[j], queryTermFreq[i]) * idf(stemTerm, allComics)
 		}
 
 		//only return comics whose rank isn't 0
