@@ -12,15 +12,19 @@ import (
 	"xkcd/nlp"
 )
 
-func parseMetaData(metadata []string, comic model.ExplainWikiJson) model.Comic {
-	var numString, title, alt string
-	for _, line := range metadata {
+func parseMetaData(metadata string, comic model.ExplainWikiJson) model.Comic {
+	var numString, title, alt, image string
+	for _, line := range strings.Split(metadata, `\n`) {
 		if regexp.MustCompile(`\|\s?number\s*=`).Match([]byte(line)) {
 			numString = strings.Split(line, "=")[1]
 		}
 
 		if strings.Contains(line, "| title ") {
 			title = line
+		}
+
+		if strings.Contains(line, "| image ") {
+			image = line
 		}
 
 		if strings.Contains(line, "| titletext ") {
@@ -36,12 +40,15 @@ func parseMetaData(metadata []string, comic model.ExplainWikiJson) model.Comic {
 	}
 	title = strings.Replace(title, "title", "", 1)
 	alt = strings.Replace(alt, "titletext", "", 1)
+	image = strings.Replace(image, "image", "", 1)
 
 	titleRaw, title := nlp.CleanAndStem(title)
 	altRaw, alt := nlp.CleanAndStem(alt)
+	image = strings.Replace(image, " ", "", -1)
 
 	return model.Comic{
 		Num:        num,
+		ImageName:  image,
 		TitleRaw:   titleRaw,
 		Title:      title,
 		AltTextRaw: altRaw,
@@ -64,16 +71,14 @@ func parseSection(section string) (string, bool) {
 func Parse(comic model.ExplainWikiJson) model.Comic {
 	content := comic.Parse.Wikitext.Content
 	//metadata is always within the first 10 lines
-	metadataBlock := strings.Split(content, "\n")[:10]
+	metadataBlock := strings.Split(content, "==")[0]
 	parsedComic := parseMetaData(metadataBlock, comic)
 
 	transcriptBlock := regexp.MustCompile(`(?s)==\s?Transcript\s?==(.*){{comic discussion}}`).FindString(content)
 	transcript, transcriptIncomplete := parseSection(transcriptBlock)
 
 	content = strings.Replace(content, transcriptBlock, "", 1)
-	for _, metadataSection := range metadataBlock {
-		content = strings.Replace(content, metadataSection, "", 1)
-	}
+	content = strings.Replace(content, metadataBlock, "", 1)
 	explanation, explanationIncomplete := parseSection(content)
 
 	parsedComic.TranscriptRaw, parsedComic.Transcript = nlp.CleanAndStem(transcript)

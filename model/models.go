@@ -9,6 +9,7 @@ type Tabler interface {
 // only cleaned whereas the non-raw version are cleaned and stemmed
 type Comic struct {
 	Num            int
+	ImageName      string
 	Title          string
 	TitleRaw       string
 	AltText        string

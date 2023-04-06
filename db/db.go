@@ -94,38 +94,6 @@ func GetRawWords() []string {
 	return rawWords
 }
 
-// func removeDuplicateStr(strSlice []string) []string {
-// 	allKeys := make(map[string]bool)
-// 	list := []string{}
-// 	for _, item := range strSlice {
-// 		if _, value := allKeys[item]; !value {
-// 			allKeys[item] = true
-// 			list = append(list, item)
-// 		}
-// 	}
-// 	return list
-// }
-
-// type combinedRaw struct {
-// 	TitleRaw      []string
-// 	AltTextRaw    []string
-// 	TranscriptRaw []string
-// }
-// var combinedWords []combinedRaw
-// var rawWords []string
-
-// err := db.Table("comics").Select("title_raw, alt_text_raw, transcript_raw").Find(&combinedWords).Error
-// if err != nil {
-// 	log.Fatal(err)
-// }
-
-// for _, combined := range combinedWords {
-// 	rawWords = append(rawWords, strings.Fields(combined.AltTextRaw)...)
-// }
-
-// return rawWords
-//}
-
 func BatchStoreTermFreq(termFreqs []model.TermFreq) {
 	termFreqList := make([]model.TermFreqDTO, 0, len(termFreqs))
 	for _, termFreq := range termFreqs {
