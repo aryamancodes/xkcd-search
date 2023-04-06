@@ -91,20 +91,20 @@ func GetRawWords() []string {
 	rawString += strings.Join(alt, " ") + " "
 	rawString += strings.Join(explain, " ") + " "
 	rawWords := strings.Fields(rawString)
-	return removeDuplicateStr(rawWords)
+	return rawWords
 }
 
-func removeDuplicateStr(strSlice []string) []string {
-	allKeys := make(map[string]bool)
-	list := []string{}
-	for _, item := range strSlice {
-		if _, value := allKeys[item]; !value {
-			allKeys[item] = true
-			list = append(list, item)
-		}
-	}
-	return list
-}
+// func removeDuplicateStr(strSlice []string) []string {
+// 	allKeys := make(map[string]bool)
+// 	list := []string{}
+// 	for _, item := range strSlice {
+// 		if _, value := allKeys[item]; !value {
+// 			allKeys[item] = true
+// 			list = append(list, item)
+// 		}
+// 	}
+// 	return list
+// }
 
 // type combinedRaw struct {
 // 	TitleRaw      []string

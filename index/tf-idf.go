@@ -89,7 +89,7 @@ func idf(queryTerm string, allComics model.ComicFreq) float64 {
 
 func RankQuery(query string, allComics model.ComicFreq) []model.RankedComic {
 	rankings := make([]model.RankedComic, 0)
-	queryTerms := strings.Split(query, " ")
+	queryTerms := strings.Fields(query)
 	// fetch only the tf of comics that contain the query terms
 	// ie. map of [comic (containing atleast one query term)] -> termFreq of comic
 	queryTermFreq := db.GetTermFreq(queryTerms)

@@ -37,7 +37,7 @@ func removeSpecialCharacters(word string) string {
 
 func TrainModel(words []string) *fuzzy.Model {
 	model := fuzzy.NewModel()
-	model.SetThreshold(10)
+	model.SetThreshold(5)
 	model.SetDepth(3)
 	model.Train(words)
 	fmt.Println("	Deletion test (yor) : ", model.SpellCheck("yor"))

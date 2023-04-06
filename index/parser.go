@@ -57,7 +57,7 @@ func parseSection(section string) (string, bool) {
 		section = incompleteRegex.ReplaceAllString(section, "")
 	}
 	//remove frequent sections found in the wiki sections such as headings, links and bullet points
-	section = regexp.MustCompile(`(\{\{)|(\}\})|(\[\[)|(\]\])|(==)|:|\||\*`).ReplaceAllString(section, " ")
+	section = regexp.MustCompile(`(\[http[\S]+)(\{\{)|(\}\})|(\[\[)|(\]\])|(==)|:|\||\*`).ReplaceAllString(section, " ")
 	return section, isIncomplete
 }
 

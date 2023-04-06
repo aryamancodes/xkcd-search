@@ -1,49 +1,53 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"os"
+	"log"
+	"math"
+	"sort"
 	"xkcd/db"
+	"xkcd/index"
 	"xkcd/nlp"
+
+	"github.com/eiannone/keyboard"
 )
 
 func main() {
 	db.Connect()
 	words := db.GetRawWords()
 	model := nlp.TrainModel(words)
-	for {
-		fmt.Println("ENTER A QUERY:")
-		var query string
-		scanner := bufio.NewScanner(os.Stdin)
-		if scanner.Scan() {
-			query = scanner.Text()
+	df := db.GetComicFreq()
+
+	fmt.Println("ENTER A QUERY:")
+
+	char, key, err := keyboard.GetSingleKey()
+	query := ""
+	for key != keyboard.KeyEnter && err == nil {
+		query += string(char)
+		if len(query) >= 3 {
+			auto, _ := model.Autocomplete(query)
+			fmt.Printf("\n%s suggestions: %v\n", query, auto)
+		} else {
+			fmt.Print(string(char))
 		}
-		fmt.Printf("CORRECTED TO %s\n", model.SpellCheckSuggestions(query, 5))
-
+		char, key, err = keyboard.GetSingleKey()
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
-	// tf := index.ComputeAllTermFreq(comics)
-	// index.ComputeAllComicFreq(comics, tf)
-	// for {
-	// 	fmt.Println("ENTER A QUERY:")
-	// 	var query string
+	_, query = nlp.CleanAndStem(query)
+	rankings := index.RankQuery(query, df)
+	sort.Slice(rankings, func(i, j int) bool {
+		return rankings[i].Rank >= rankings[j].Rank
+	})
 
-	// 	scanner := bufio.NewScanner(os.Stdin)
-	// 	if scanner.Scan() {
-	// 		query = scanner.Text()
-	// 	}
+	if len(rankings) == 0 {
+		fmt.Printf("\n No results found. Maybe there isn't an xkcd for everything!\n")
+	}
 
-	// 	rankings := index.RankQuery(query, df)
-	// 	sort.Slice(rankings, func(i, j int) bool {
-	// 		return rankings[i].Rank >= rankings[j].Rank
-	// 	})
-
-	// 	if len(rankings) == 0 {
-	// 		fmt.Printf("\n No results found. Maybe there isn't an xkcd for everything!\n")
-	// 	}
-
-	// 	for i, ranked := range rankings {
-	// 		fmt.Printf("\n%d) %d (rank: %f) \n", i, ranked.ComicNum, ranked.Rank)
-	// 	}
-	// }
+	maxDisplayed := int(math.Min(float64(len(rankings)), 9))
+	rankings = rankings[:maxDisplayed]
+	for i, ranked := range rankings {
+		fmt.Printf("%d) https://xkcd.com/%d (rank: %f) \n", i, ranked.ComicNum, ranked.Rank)
+	}
 }
