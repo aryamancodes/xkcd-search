@@ -43,3 +43,11 @@ func TrainModel(words []string) *fuzzy.Model {
 	fmt.Println("	Deletion test (yor) : ", model.SpellCheck("yor"))
 	return model
 }
+
+func Autocorect(model *fuzzy.Model, raw string) (bool, string) {
+	corrected := ""
+	for _, term := range strings.Fields(raw) {
+		corrected += model.SpellCheck(term) + " "
+	}
+	return raw != corrected, corrected
+}
