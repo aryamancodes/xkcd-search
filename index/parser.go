@@ -14,9 +14,10 @@ import (
 
 func parseMetaData(metadata string, comic model.ExplainWikiJson) model.Comic {
 	var numString, title, alt, image string
-	for _, line := range strings.Split(metadata, `\n`) {
-		if regexp.MustCompile(`\|\s?number\s*=`).Match([]byte(line)) {
-			numString = strings.Split(line, "=")[1]
+	metadata = strings.Replace(metadata, `\n`, "\n", -1)
+	for _, line := range strings.Split(metadata, "\n") {
+		if cleanNum := regexp.MustCompile(`\|\s?number\s*=\s*[0-9]*`).FindString(line); cleanNum != "" {
+			numString = strings.Split(cleanNum, "=")[1]
 		}
 
 		if strings.Contains(line, "| title ") {
@@ -24,7 +25,7 @@ func parseMetaData(metadata string, comic model.ExplainWikiJson) model.Comic {
 		}
 
 		if strings.Contains(line, "| image ") {
-			image = line
+			image = strings.Split(line, "=")[1]
 		}
 
 		if strings.Contains(line, "| titletext ") {
@@ -54,6 +55,7 @@ func parseMetaData(metadata string, comic model.ExplainWikiJson) model.Comic {
 		AltTextRaw: altRaw,
 		AltText:    alt,
 	}
+
 }
 
 func parseSection(section string) (string, bool) {
@@ -70,7 +72,7 @@ func parseSection(section string) (string, bool) {
 
 func Parse(comic model.ExplainWikiJson) model.Comic {
 	content := comic.Parse.Wikitext.Content
-	//metadata is always within the first 10 lines
+	//metadata is always before the first (== prefixed) heading
 	metadataBlock := strings.Split(content, "==")[0]
 	parsedComic := parseMetaData(metadataBlock, comic)
 
