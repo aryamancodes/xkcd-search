@@ -2,6 +2,7 @@
 package nlp
 
 import (
+	"log"
 	"regexp"
 	"strings"
 
@@ -14,10 +15,15 @@ import (
 func CleanAndStem(content string) (string, string) {
 	cleaned := ""
 	stemmed := ""
-	for _, word := range strings.Fields(content) {
+	words := strings.Fields(content)
+	for i, word := range words {
 		word = removeSpecialCharacters(word)
-		cleaned += word + " "
-		stemmed += stem(word) + " "
+		cleaned += word
+		stemmed += stem(word)
+		if i != len(words)-1 {
+			cleaned += " "
+			stemmed += " "
+		}
 	}
 	return cleaned, stemmed
 }
@@ -29,7 +35,7 @@ func stem(word string) string {
 
 func removeSpecialCharacters(word string) string {
 	word = unidecode.Unidecode(word)
-	word = regexp.MustCompile(`[^a-zA-Z0-9 ]+`).ReplaceAllString(word, "")
+	word = regexp.MustCompile(`[^a-zA-Z0-9]+`).ReplaceAllString(word, "")
 	word = strings.ToLower(word)
 	return word
 }
@@ -48,4 +54,12 @@ func Autocorect(model *fuzzy.Model, raw string) (bool, string) {
 		corrected += model.SpellCheck(term) + " "
 	}
 	return raw != corrected, corrected
+}
+
+func Autocomplete(model *fuzzy.Model, term string) []string {
+	terms, err := model.Autocomplete(term)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return terms
 }
