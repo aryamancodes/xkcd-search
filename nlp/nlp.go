@@ -2,7 +2,6 @@
 package nlp
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -40,7 +39,6 @@ func TrainModel(words []string) *fuzzy.Model {
 	model.SetThreshold(5)
 	model.SetDepth(3)
 	model.Train(words)
-	fmt.Println("	Deletion test (yor) : ", model.SpellCheck("yor"))
 	return model
 }
 
