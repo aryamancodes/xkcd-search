@@ -1,0 +1,12 @@
+<html>
+    <head>
+        <title>xkcd search!</title>
+    </head>
+    <body>
+        <h1>enter a query:</h1>
+        <input id="query" type="text" onkeyup="suggest(this.value)"/>
+        <button id="submit" onclick="search(query.value)"> Submit </button>
+        <div id="results"></div>
+        <script src="index.js"></script>
+    </body>
+</html>
