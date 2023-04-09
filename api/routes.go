@@ -65,15 +65,19 @@ func handleSuggest(c *gin.Context) {
 
 func handleSearch(c *gin.Context) {
 	var request model.Search
-	var query string
+	var query, autocorrectedRaw string
+	autocorrect, hasTypo := true, false
 
 	if c.ShouldBind(&request) == nil {
-		query = strings.Replace(request.Query, "+", " ", -1)
+		query = request.Query
+		autocorrect = request.Autocorrect
 	}
 	rawQuery, stemQuery := nlp.CleanAndStem(query)
-	hasTypo, autocorrectedRaw := nlp.Autocorect(language, rawQuery)
-	if hasTypo {
-		rawQuery, stemQuery = nlp.CleanAndStem(autocorrectedRaw)
+	if autocorrect {
+		hasTypo, autocorrectedRaw = nlp.Autocorect(language, rawQuery)
+		if hasTypo {
+			rawQuery, stemQuery = nlp.CleanAndStem(autocorrectedRaw)
+		}
 	}
 	rankings := index.RankQuery(rawQuery, stemQuery, comicFreq)
 
