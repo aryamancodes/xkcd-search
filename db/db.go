@@ -20,11 +20,12 @@ var err error
 
 func Connect() {
 	cfg := mysql.Config{
-		User:   os.Getenv("DBUSER"),
-		Passwd: os.Getenv("DBPASS"),
-		Net:    "tcp",
-		Addr:   "127.0.0.1:3306",
-		DBName: "xkcd_search",
+		User:                 os.Getenv("DBUSER"),
+		Passwd:               os.Getenv("DBPASS"),
+		Net:                  "tcp",
+		Addr:                 os.Getenv("DBADDR"),
+		DBName:               "xkcd_search",
+		AllowNativePasswords: true,
 	}
 	sqlDB, err := sql.Open("mysql", cfg.FormatDSN())
 	if err != nil {
