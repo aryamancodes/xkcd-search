@@ -66,7 +66,6 @@ func GetRawWords() []string {
 	var title []string
 	var transcript []string
 	var alt []string
-	var explain []string
 	err := db.Table("comics").Select("title_raw").Find(&title).Error
 	if err != nil {
 		log.Fatal(err)
@@ -82,15 +81,9 @@ func GetRawWords() []string {
 		log.Fatal(err)
 	}
 
-	err = db.Table("comics").Select("explanation_raw").Find(&explain).Error
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	rawString := strings.Join(transcript, " ") + " "
 	rawString += strings.Join(title, " ") + " "
 	rawString += strings.Join(alt, " ") + " "
-	rawString += strings.Join(explain, " ") + " "
 	rawWords := strings.Fields(rawString)
 	return rawWords
 }

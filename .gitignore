@@ -16,3 +16,8 @@ xkcd
 # vendor/
 .DS_STORE
 .vscode
+
+bin/
+
+*.zip
+*.sh

@@ -3,6 +3,7 @@
 package api
 
 import (
+	"context"
 	"math"
 	"sort"
 	"strings"
@@ -11,17 +12,24 @@ import (
 	"xkcd/model"
 	"xkcd/nlp"
 
+	"github.com/aws/aws-lambda-go/events"
+	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
 	"github.com/gin-gonic/gin"
 	"github.com/sajari/fuzzy"
 )
 
 var comicFreq model.ComicFreq
-var isLoaded = false
 var language *fuzzy.Model
+var ginLambda *ginadapter.GinLambda
+
+func AWSHandler(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	return ginLambda.ProxyWithContext(ctx, req)
+}
 
 func Serve() {
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
-	r.Use(CORSMiddleware())
+	//r.Use(corsMiddleware())
 	db.Connect()
 	comicFreq = db.GetComicFreq()
 	words := db.GetRawWords()
@@ -35,10 +43,10 @@ func Serve() {
 	// handle search: /search?q="query"
 	r.GET("/search", handleSearch)
 
-	r.Run() // listen and serve on 0.0.0.0:8080
+	ginLambda = ginadapter.New(r)
 }
 
-func CORSMiddleware() gin.HandlerFunc {
+func corsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		c.Header("Access-Control-Allow-Origin", "*")

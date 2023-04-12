@@ -3,6 +3,8 @@ module xkcd
 go 1.20
 
 require (
+	github.com/aws/aws-lambda-go v1.39.1
+	github.com/awslabs/aws-lambda-go-api-proxy v0.14.0
 	github.com/gin-gonic/gin v1.9.0
 	github.com/go-sql-driver/mysql v1.7.0
 	github.com/kljensen/snowball v0.8.0
