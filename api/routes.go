@@ -26,10 +26,9 @@ func AWSHandler(ctx context.Context, req events.APIGatewayProxyRequest) (events.
 	return ginLambda.ProxyWithContext(ctx, req)
 }
 
-func Serve() {
+func Serve(local bool) {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
-	//r.Use(corsMiddleware())
 	db.Connect()
 	comicFreq = db.GetComicFreq()
 	words := db.GetRawWords()
@@ -42,6 +41,11 @@ func Serve() {
 
 	// handle search: /search?q="query"
 	r.GET("/search", handleSearch)
+
+	if local {
+		r.Use(corsMiddleware())
+		r.Run()
+	}
 
 	ginLambda = ginadapter.New(r)
 }

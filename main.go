@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"xkcd/api"
 	"xkcd/db"
 	"xkcd/index"
@@ -14,15 +15,17 @@ import (
 var comicFreq model.ComicFreq
 var language *fuzzy.Model
 var ginLambda *ginadapter.GinLambda
+var runLocal = false
 
 func init() {
-	api.Serve()
+	runLocal = os.Getenv("AWS_LAMBDA_RUNTIME_API") == ""
+	api.Serve(runLocal)
 }
 
 func main() {
-	//populateDB()
-	//api.Serve()
-	lambda.Start(api.AWSHandler)
+	if !runLocal {
+		lambda.Start(api.AWSHandler)
+	}
 }
 
 func populateDB() {
