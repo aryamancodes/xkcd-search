@@ -15,11 +15,9 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
 	"github.com/gin-gonic/gin"
-	"github.com/sajari/fuzzy"
 )
 
 var comicFreq model.ComicFreq
-var language *fuzzy.Model
 var ginLambda *ginadapter.GinLambda
 
 func AWSHandler(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -31,7 +29,7 @@ func Serve(local bool) {
 	db.Connect()
 	comicFreq = db.GetComicFreq()
 	words := db.GetRawWords()
-	language = nlp.TrainModel(words)
+	nlp.TrainModel(words)
 
 	r.GET("/", handleLoad)
 
@@ -82,7 +80,7 @@ func handleSuggest(c *gin.Context) {
 	currTerm := terms[len(terms)-1]
 	currTerm, _ = nlp.CleanAndStem(currTerm)
 
-	termSuggestions := nlp.Autocomplete(language, currTerm)
+	termSuggestions := nlp.Autocomplete(currTerm)
 	var querySuggestions []string
 	for _, suggest := range termSuggestions {
 		terms = append(terms[:len(terms)-1], suggest)
@@ -107,7 +105,7 @@ func handleSearch(c *gin.Context) {
 	autocorrect := request.Autocorrect
 	rawQuery, stemQuery := nlp.CleanAndStem(query)
 	if autocorrect {
-		hasTypo, autocorrectedRaw = nlp.Autocorect(language, rawQuery)
+		hasTypo, autocorrectedRaw = nlp.Autocorect(rawQuery)
 		if hasTypo {
 			rawQuery, stemQuery = nlp.CleanAndStem(autocorrectedRaw)
 		}

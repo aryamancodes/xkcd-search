@@ -11,6 +11,8 @@ import (
 	"github.com/sajari/fuzzy"
 )
 
+var language *fuzzy.Model
+
 // return a cleaned and stemmed version of content
 func CleanAndStem(content string) (string, string) {
 	cleaned := ""
@@ -40,19 +42,18 @@ func removeSpecialCharacters(word string) string {
 	return word
 }
 
-func TrainModel(words []string) *fuzzy.Model {
-	model := fuzzy.NewModel()
-	model.SetThreshold(5)
-	model.SetDepth(3)
-	model.Train(words)
-	return model
+func TrainModel(words []string) {
+	language = fuzzy.NewModel()
+	language.SetThreshold(5)
+	language.SetDepth(3)
+	language.Train(words)
 }
 
-func Autocorect(model *fuzzy.Model, raw string) (bool, string) {
+func Autocorect(raw string) (bool, string) {
 	corrected := ""
 	rawWords := strings.Fields(raw)
 	for i, term := range rawWords {
-		corrected += model.SpellCheck(term)
+		corrected += language.SpellCheck(term)
 		if i != len(rawWords)-1 {
 			corrected += " "
 		}
@@ -60,8 +61,8 @@ func Autocorect(model *fuzzy.Model, raw string) (bool, string) {
 	return raw != corrected, corrected
 }
 
-func Autocomplete(model *fuzzy.Model, term string) []string {
-	terms, err := model.Autocomplete(term)
+func Autocomplete(term string) []string {
+	terms, err := language.Autocomplete(term)
 	if err != nil {
 		log.Fatal(err)
 	}
