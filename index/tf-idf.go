@@ -103,6 +103,20 @@ func idf(queryTerm string, allComics model.ComicFreq) float64 {
 	return math.Log10(totalComics / comicsWithQueryTerm)
 }
 
+func findMatchSections(queryTerm []string, rawQueryTerms []string, comic model.Comic) []model.TermSection {
+	var sections []model.TermSection
+	for i, term := range queryTerm {
+		var currTerm model.TermSection
+		currTerm.Term = rawQueryTerms[i]
+		currTerm.TitleCount = strings.Count(comic.Title, term)
+		currTerm.AltCount = strings.Count(comic.AltText, term)
+		currTerm.TranscriptCount = strings.Count(comic.Transcript, term)
+		currTerm.ExplanationCount = strings.Count(comic.Explanation, term)
+		sections = append(sections, currTerm)
+	}
+	return sections
+}
+
 func RankQuery(rawQuery string, stemQuery string, allComics []model.Comic, comicFreq model.ComicFreq) []model.RankedComic {
 	rankings := make([]model.RankedComic, 0)
 	stemQueryTerms := strings.Fields(stemQuery)
@@ -121,8 +135,9 @@ func RankQuery(rawQuery string, stemQuery string, allComics []model.Comic, comic
 		if rank > 0 {
 			//exactMatchSections, approxMatchSections :=
 			rankings = append(rankings, model.RankedComic{
-				ComicNum: i,
-				Rank:     rank,
+				ComicNum:     i,
+				Rank:         rank,
+				TermSections: findMatchSections(stemQueryTerms, rawQueryTerms, allComics[currTermFreq.ComicNum-1]),
 			})
 		}
 	}
