@@ -17,6 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var comics []model.Comic
 var comicFreq model.ComicFreq
 var ginLambda *ginadapter.GinLambda
 
@@ -27,7 +28,9 @@ func AWSHandler(ctx context.Context, req events.APIGatewayProxyRequest) (events.
 func Serve(local bool) {
 	r := gin.Default()
 	db.Connect()
+	comics = db.GetComics()
 	comicFreq = db.GetComicFreq()
+	comicFreq.TotalComics = len(comics)
 	words := db.GetRawWords()
 	nlp.TrainModel(words)
 
@@ -73,7 +76,7 @@ func handleSuggest(c *gin.Context) {
 	var request model.Suggest
 	err := c.Bind(&request)
 	if err != nil {
-		c.JSON(400, "Sorry! You didn't call the api correctly")
+		c.JSON(400, "Sorry! You didn't call the api correctly. Expected route is /suggest?q=incom ")
 		return
 	}
 	terms := strings.Fields(request.Query)
@@ -98,7 +101,7 @@ func handleSearch(c *gin.Context) {
 	hasTypo := false
 	err := c.Bind(&request)
 	if err != nil {
-		c.JSON(400, "Sorry! You didn't call the api correctly")
+		c.JSON(400, "Sorry! You didn't call the api correctly. Expected route is /search?q=test&autocomplete=true")
 		return
 	}
 	query := request.Query
@@ -110,7 +113,7 @@ func handleSearch(c *gin.Context) {
 			rawQuery, stemQuery = nlp.CleanAndStem(autocorrectedRaw)
 		}
 	}
-	rankings := index.RankQuery(rawQuery, stemQuery, comicFreq)
+	rankings := index.RankQuery(rawQuery, stemQuery, comics, comicFreq)
 
 	//if no comics are found, return 404
 	if len(rankings) == 0 {

@@ -21,17 +21,17 @@ func computeTermFreq(comic model.Comic, comicNum int) {
 	stemToRawMap := make(map[string]string)
 	var currRawSection []string
 
-	//weight terms in the following order: title > alt > transcript > explain
+	//weight terms in the following order: title > alt > transcript > explain for both raw and stem maps
 	currRawSection = strings.Fields(comic.TitleRaw)
 	for i, titleTerm := range strings.Fields(comic.Title) {
 		termFreq[titleTerm] += 4
-		stemToRawMap[titleTerm] += " " + currRawSection[i]
+		stemToRawMap[titleTerm] += " " + currRawSection[i] + " " + currRawSection[i] + " " + currRawSection[i]
 	}
 
 	currRawSection = strings.Fields(comic.AltTextRaw)
 	for i, altTerm := range strings.Fields(comic.AltText) {
 		termFreq[altTerm] += 3
-		stemToRawMap[altTerm] += " " + currRawSection[i]
+		stemToRawMap[altTerm] += " " + currRawSection[i] + " " + currRawSection[i]
 	}
 
 	currRawSection = strings.Fields(comic.TranscriptRaw)
@@ -103,7 +103,7 @@ func idf(queryTerm string, allComics model.ComicFreq) float64 {
 	return math.Log10(totalComics / comicsWithQueryTerm)
 }
 
-func RankQuery(rawQuery string, stemQuery string, allComics model.ComicFreq) []model.RankedComic {
+func RankQuery(rawQuery string, stemQuery string, allComics []model.Comic, comicFreq model.ComicFreq) []model.RankedComic {
 	rankings := make([]model.RankedComic, 0)
 	stemQueryTerms := strings.Fields(stemQuery)
 	// fetch only the tf of comics that contain the query terms
@@ -111,14 +111,15 @@ func RankQuery(rawQuery string, stemQuery string, allComics model.ComicFreq) []m
 	queryTermFreq := db.GetTermFreq(stemQueryTerms)
 	rawQueryTerms := strings.Fields(rawQuery)
 
-	for i := 0; i < allComics.TotalComics; i++ {
+	for i, currTermFreq := range queryTermFreq {
 		rank := 0.0
 		for j, stemTerm := range stemQueryTerms {
-			rank += tf(stemTerm, rawQueryTerms[j], queryTermFreq[i]) * idf(stemTerm, allComics)
+			rank += tf(stemTerm, rawQueryTerms[j], currTermFreq) * idf(stemTerm, comicFreq)
 		}
 
 		//only return comics whose rank isn't 0
 		if rank > 0 {
+			//exactMatchSections, approxMatchSections :=
 			rankings = append(rankings, model.RankedComic{
 				ComicNum: i,
 				Rank:     rank,

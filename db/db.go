@@ -54,7 +54,7 @@ func BatchStoreComics(comics []model.Comic) {
 func GetComics() []model.Comic {
 	var comics []model.Comic
 
-	result := db.Find(&comics)
+	result := db.Order("num").Find(&comics)
 	if result.Error != nil {
 		log.Fatal(result.Error)
 	}
@@ -107,7 +107,7 @@ func BatchStoreTermFreq(termFreqs []model.TermFreq) {
 	}
 }
 
-// Function that returns the frequency of all
+// Function that returns the frequency of all query terms
 func GetTermFreq(queryTerms []string) map[int]model.TermFreq {
 	termFreqList := make(map[int]model.TermFreq, 0)
 
@@ -138,7 +138,6 @@ func GetTermFreq(queryTerms []string) map[int]model.TermFreq {
 		termFreq[row.Term] = row.Freq
 		stemRootMap[row.Term] = row.TermsRaw
 	}
-	log.Println("GOT ALL TFS")
 	return termFreqList
 }
 
@@ -174,6 +173,5 @@ func GetComicFreq() model.ComicFreq {
 
 	return model.ComicFreq{
 		ComicsWithTermFreq: comicFreq,
-		TotalComics:        len(comicFreqsDB),
 	}
 }

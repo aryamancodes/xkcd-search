@@ -3,8 +3,6 @@ package main
 import (
 	"os"
 	"xkcd/api"
-	"xkcd/db"
-	"xkcd/index"
 	"xkcd/model"
 
 	"github.com/aws/aws-lambda-go/lambda"
@@ -23,14 +21,15 @@ func init() {
 }
 
 func main() {
+	//populateDB()
 	if !runLocal {
 		lambda.Start(api.AWSHandler)
 	}
 }
 
-func populateDB() {
-	db.Connect()
-	comics := index.FetchAllComics()
-	tf := index.ComputeAllTermFreq(comics)
-	index.ComputeAllComicFreq(comics, tf)
-}
+// func populateDB() {
+// 	db.Connect()
+// 	comics := index.FetchAllComics()
+// 	tf := index.ComputeAllTermFreq(comics)
+// 	index.ComputeAllComicFreq(comics, tf)
+// }
