@@ -27,7 +27,6 @@ func AWSHandler(ctx context.Context, req events.APIGatewayProxyRequest) (events.
 }
 
 func Serve(local bool) {
-	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	db.Connect()
 	comicFreq = db.GetComicFreq()
@@ -45,9 +44,10 @@ func Serve(local bool) {
 	if local {
 		r.Use(corsMiddleware())
 		r.Run()
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+		ginLambda = ginadapter.New(r)
 	}
-
-	ginLambda = ginadapter.New(r)
 }
 
 func corsMiddleware() gin.HandlerFunc {
@@ -73,11 +73,12 @@ func handleLoad(c *gin.Context) {
 
 func handleSuggest(c *gin.Context) {
 	var request model.Suggest
-	var terms []string
-
-	if c.ShouldBind(&request) == nil {
-		terms = strings.Fields(request.Query)
+	err := c.Bind(&request)
+	if err != nil {
+		c.JSON(400, "Sorry! You didn't call the api correctly")
+		return
 	}
+	terms := strings.Fields(request.Query)
 	currTerm := terms[len(terms)-1]
 	currTerm, _ = nlp.CleanAndStem(currTerm)
 
@@ -95,13 +96,15 @@ func handleSuggest(c *gin.Context) {
 
 func handleSearch(c *gin.Context) {
 	var request model.Search
-	var query, autocorrectedRaw string
-	autocorrect, hasTypo := true, false
-
-	if c.ShouldBind(&request) == nil {
-		query = request.Query
-		autocorrect = request.Autocorrect
+	var autocorrectedRaw string
+	hasTypo := false
+	err := c.Bind(&request)
+	if err != nil {
+		c.JSON(400, "Sorry! You didn't call the api correctly")
+		return
 	}
+	query := request.Query
+	autocorrect := request.Autocorrect
 	rawQuery, stemQuery := nlp.CleanAndStem(query)
 	if autocorrect {
 		hasTypo, autocorrectedRaw = nlp.Autocorect(language, rawQuery)
@@ -135,4 +138,5 @@ func handleSearch(c *gin.Context) {
 
 	//return just the ranking if there was no typo
 	c.JSON(200, rankings)
+	return
 }

@@ -50,8 +50,12 @@ func TrainModel(words []string) *fuzzy.Model {
 
 func Autocorect(model *fuzzy.Model, raw string) (bool, string) {
 	corrected := ""
-	for _, term := range strings.Fields(raw) {
-		corrected += model.SpellCheck(term) + " "
+	rawWords := strings.Fields(raw)
+	for i, term := range rawWords {
+		corrected += model.SpellCheck(term)
+		if i != len(rawWords)-1 {
+			corrected += " "
+		}
 	}
 	return raw != corrected, corrected
 }
