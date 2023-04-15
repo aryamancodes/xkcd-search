@@ -89,8 +89,10 @@ func FetchAllComics() []model.Comic {
 func FetchNewComics() []model.Comic {
 	lastStoredComic := db.GetLastStoredComicNum()
 	latestComicNumber := getCurrentComicNum()
+	if lastStoredComic == lastStoredComic {
+		return nil
+	}
 	comicList := make([]model.Comic, 0)
-
 	for i := lastStoredComic; i < latestComicNumber; i++ {
 		go fetchComic(i + 1)
 	}
@@ -100,4 +102,18 @@ func FetchNewComics() []model.Comic {
 	}
 	db.BatchStoreComics(comicList)
 	return comicList
+}
+
+func FetchIncompleteComics(incompleteComics []model.Comic) []model.Comic {
+	incompleteList := make([]model.Comic, 0)
+	for _, comic := range incompleteComics {
+		go fetchComic(comic.Num)
+	}
+
+	for i := 0; i < len(incompleteComics); i++ {
+		incompleteList = append(incompleteList, <-comicChan)
+	}
+
+	db.UpdateIncompleteComics(incompleteList)
+	return incompleteList
 }

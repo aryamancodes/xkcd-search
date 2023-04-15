@@ -21,7 +21,6 @@ type TermFreq struct {
 	ComicNum        int
 	TermInComicFreq map[string]int    // stemmed term -> # times term occurs in comic
 	StemToRawMap    map[string]string // stemmed term -> string of raw terms with same stem
-	TotalTerms      int
 }
 
 // struct used to store number of comics a term occurs in, for all terms, along with the number of comics

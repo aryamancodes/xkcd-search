@@ -5,6 +5,7 @@ package index
 import (
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 
 	"xkcd/db"
@@ -48,7 +49,6 @@ func computeTermFreq(comic model.Comic, comicNum int) {
 		ComicNum:        comicNum,
 		TermInComicFreq: termFreq,
 		StemToRawMap:    stemToRawMap,
-		TotalTerms:      len(termFreq),
 	}
 }
 
@@ -65,6 +65,49 @@ func ComputeAllTermFreq(comics []model.Comic) []model.TermFreq {
 	fmt.Println("FETCHED ALL TFS")
 	db.BatchStoreTermFreq(termFreqs)
 	return termFreqs
+}
+
+// compare the term freqs of previously stored incomplete comics and any new revisions
+// store the new tf and return just the new terms added to the comic
+func ComputeIncompleteTermFreq(old []model.Comic, curr []model.Comic) []model.TermFreq {
+
+	computeTf := func(comics []model.Comic) []model.TermFreq {
+		termFreqs := make([]model.TermFreq, 0)
+		for _, comic := range comics {
+			go computeTermFreq(comic, comic.Num)
+		}
+
+		for range comics {
+			termFreqs = append(termFreqs, <-termFreqChan)
+		}
+		return termFreqs
+	}
+	//compute and sort the tfs for old and new for comparision of new terms. store the new tf
+	oldTfList := computeTf(old)
+	currTfList := computeTf(curr)
+	db.UpdateTermFreq(currTfList)
+
+	sort.Slice(oldTfList, func(i, j int) bool {
+		return oldTfList[i].ComicNum >= oldTfList[j].ComicNum
+	})
+	sort.Slice(currTfList, func(i, j int) bool {
+		return currTfList[i].ComicNum >= currTfList[j].ComicNum
+	})
+
+	var revisedTfList []model.TermFreq
+	for i, currTf := range currTfList {
+		revisedTf := model.TermFreq{TermInComicFreq: make(map[string]int)}
+		revisedTf.ComicNum = currTf.ComicNum
+		revisedTf.StemToRawMap = currTf.StemToRawMap
+		for currTerm, currFreq := range currTf.TermInComicFreq {
+			if oldTfList[i].TermInComicFreq[currTerm] == 0 {
+				revisedTf.TermInComicFreq[currTerm] = currFreq
+			}
+		}
+		revisedTfList = append(revisedTfList, revisedTf)
+	}
+
+	return revisedTfList
 }
 
 // calculate the number of comics each term occurs in and the total number of comics
@@ -145,7 +188,6 @@ func RankQuery(rawQuery string, stemQuery string, allComics []model.Comic, comic
 
 		//only return comics whose rank isn't 0
 		if rank > 0 {
-			//exactMatchSections, approxMatchSections :=
 			rankings = append(rankings, model.RankedComic{
 				ComicNum:     i,
 				Rank:         rank,

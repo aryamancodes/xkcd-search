@@ -52,6 +52,14 @@ func BatchStoreComics(comics []model.Comic) {
 	}
 }
 
+func UpdateIncompleteComics(incomplete []model.Comic) {
+	//upsert all incomplete comics based on num
+	db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "num"}},
+		UpdateAll: true,
+	}).Create(&incomplete)
+}
+
 func GetLastStoredComicNum() int {
 	var comic model.Comic
 	db.Last(&comic)
@@ -61,7 +69,7 @@ func GetLastStoredComicNum() int {
 func GetComics() []model.Comic {
 	var comics []model.Comic
 
-	result := db.Order("num").Find(&comics)
+	result := db.Find(&comics)
 	if result.Error != nil {
 		log.Fatal(result.Error)
 	}
@@ -71,7 +79,11 @@ func GetComics() []model.Comic {
 
 func GetIncomplete() []model.Comic {
 	var comics []model.Comic
-	result := db.Find(&comics).Where("incomplete", true)
+	result := db.Where("incomplete = ?", true).Find(&comics)
+	if result.Error != nil {
+		log.Fatal(result.Error)
+	}
+	return comics
 }
 
 func GetRawWords() []string {
@@ -119,6 +131,29 @@ func BatchStoreTermFreq(termFreqs []model.TermFreq) {
 	}
 }
 
+// Function that updated the termFreq of incomplete comics. Deletes all the old terms and
+// insert the new ones
+func UpdateTermFreq(termFreqs []model.TermFreq) {
+	termFreqList := make([]model.TermFreqDTO, 0, len(termFreqs))
+	for _, termFreq := range termFreqs {
+		for term, freq := range termFreq.TermInComicFreq {
+			termFreq := model.TermFreqDTO{
+				ComicNum: termFreq.ComicNum,
+				Term:     term,
+				TermsRaw: termFreq.StemToRawMap[term],
+				Freq:     freq,
+			}
+			termFreqList = append(termFreqList, termFreq)
+		}
+		db.Where("comic_num = ?", termFreq.ComicNum).Delete(model.TermFreqDTO{})
+	}
+
+	result := db.CreateInBatches(&termFreqList, BATCH_SIZE)
+	if result.Error != nil {
+		log.Fatal(result.Error)
+	}
+}
+
 // Function that returns the frequency of all query terms
 func GetTermFreq(queryTerms []string) map[int]model.TermFreq {
 	termFreqList := make(map[int]model.TermFreq, 0)
@@ -140,7 +175,6 @@ func GetTermFreq(queryTerms []string) map[int]model.TermFreq {
 				ComicNum:        prevNum,
 				TermInComicFreq: termFreq,
 				StemToRawMap:    stemRootMap,
-				TotalTerms:      len(termFreq),
 			}
 			termFreqList[prevNum] = completedTF
 			prevNum = row.ComicNum
@@ -178,10 +212,10 @@ func UpdateComicFreq(newComicFreq model.ComicFreq) {
 		comicFreqList = append(comicFreqList, comicFreq)
 	}
 
-	//insert new values into comic_frequency and update frequency if they existed already
+	//upsert into comic frequency based on term
 	db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "term"}},
-		DoUpdates: clause.AssignmentColumns([]string{"freq"}),
+		UpdateAll: true,
 	}).CreateInBatches(&comicFreqList, BATCH_SIZE)
 }
 
