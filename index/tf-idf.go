@@ -85,6 +85,18 @@ func ComputeAllComicFreq(comics []model.Comic, termFreqs []model.TermFreq) model
 	return result
 }
 
+func ComputeNewComicFreq(newTermFreqs []model.TermFreq, oldComicFreq model.ComicFreq) model.ComicFreq {
+	newComicFreq := oldComicFreq
+	for _, newTermFreq := range newTermFreqs {
+		for newTerm := range newTermFreq.TermInComicFreq {
+			newComicFreq.ComicsWithTermFreq[newTerm]++
+		}
+	}
+
+	db.UpdateComicFreq(newComicFreq)
+	return newComicFreq
+}
+
 func tf(stemTerm string, rawTerm string, currComicTerms model.TermFreq) float64 {
 	exactMatches := strings.Count(currComicTerms.StemToRawMap[stemTerm], rawTerm)
 	queryTermInCurrComic := float64(currComicTerms.TermInComicFreq[stemTerm] * (1 + exactMatches))

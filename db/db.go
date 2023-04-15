@@ -10,6 +10,7 @@ import (
 	"github.com/go-sql-driver/mysql"
 	mysqlGorm "gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
 )
 
@@ -51,6 +52,12 @@ func BatchStoreComics(comics []model.Comic) {
 	}
 }
 
+func GetLastStoredComicNum() int {
+	var comic model.Comic
+	db.Last(&comic)
+	return comic.Num
+}
+
 func GetComics() []model.Comic {
 	var comics []model.Comic
 
@@ -60,6 +67,11 @@ func GetComics() []model.Comic {
 	}
 	log.Println("GOT ALL COMICS")
 	return comics
+}
+
+func GetIncomplete() []model.Comic {
+	var comics []model.Comic
+	result := db.Find(&comics).Where("incomplete", true)
 }
 
 func GetRawWords() []string {
@@ -150,11 +162,27 @@ func BatchStoreComicFreq(comicFreqs model.ComicFreq) {
 		}
 		comicFreqList = append(comicFreqList, comicFreq)
 	}
-	db.Logger.LogMode(logger.Info)
 	result := db.CreateInBatches(&comicFreqList, BATCH_SIZE)
 	if result.Error != nil {
 		log.Fatal(result.Error)
 	}
+}
+
+func UpdateComicFreq(newComicFreq model.ComicFreq) {
+	comicFreqList := make([]model.ComicFreqDTO, 0, len(newComicFreq.ComicsWithTermFreq))
+	for term, freq := range newComicFreq.ComicsWithTermFreq {
+		comicFreq := model.ComicFreqDTO{
+			Term: term,
+			Freq: freq,
+		}
+		comicFreqList = append(comicFreqList, comicFreq)
+	}
+
+	//insert new values into comic_frequency and update frequency if they existed already
+	db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "term"}},
+		DoUpdates: clause.AssignmentColumns([]string{"freq"}),
+	}).CreateInBatches(&comicFreqList, BATCH_SIZE)
 }
 
 func GetComicFreq() model.ComicFreq {

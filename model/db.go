@@ -35,7 +35,6 @@ func (TermFreqDTO) TableName() string {
 
 // struct used to store individual terms and their comic-frequencies into db
 type ComicFreqDTO struct {
-	Id   int `gorm:"autoIncrement"`
 	Term string
 	Freq int
 }

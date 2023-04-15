@@ -27,6 +27,9 @@ func AWSHandler(ctx context.Context, req events.APIGatewayProxyRequest) (events.
 
 func Serve(local bool) {
 	r := gin.Default()
+	if local {
+		r.Use(corsMiddleware())
+	}
 	db.Connect()
 	comics = db.GetComics()
 	comicFreq = db.GetComicFreq()
@@ -43,7 +46,6 @@ func Serve(local bool) {
 	r.GET("/search", handleSearch)
 
 	if local {
-		r.Use(corsMiddleware())
 		r.Run()
 	} else {
 		gin.SetMode(gin.ReleaseMode)
@@ -53,7 +55,6 @@ func Serve(local bool) {
 
 func corsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Credentials", "true")
 		c.Header("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")

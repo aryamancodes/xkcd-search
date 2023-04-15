@@ -26,7 +26,6 @@ CREATE TABLE term_frequency (
 
 DROP TABLE IF EXISTS comic_frequency;
 CREATE TABLE comic_frequency (
-  id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  term TEXT,
+  term VARCHAR(50),
   freq INTEGER
 );

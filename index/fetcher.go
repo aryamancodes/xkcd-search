@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"math"
 	"math/rand"
 	"net/http"
 	"time"
@@ -72,17 +71,33 @@ func fetchComic(num int) {
 // (concurrently) fetch all comics+explanations based on the current comic number
 func FetchAllComics() []model.Comic {
 	latestComicNumber := getCurrentComicNum()
-	test := int(math.Max(250, float64(latestComicNumber)))
 	comicList := make([]model.Comic, 0, latestComicNumber)
 
-	for i := 0; i < test; i++ {
+	for i := 0; i < latestComicNumber; i++ {
 		go fetchComic(i + 1)
 	}
 
-	for i := 0; i < test; i++ {
+	for i := 0; i < latestComicNumber; i++ {
 		comicList = append(comicList, <-comicChan)
 	}
 
+	db.BatchStoreComics(comicList)
+	return comicList
+}
+
+// fetch new comics when updating
+func FetchNewComics() []model.Comic {
+	lastStoredComic := db.GetLastStoredComicNum()
+	latestComicNumber := getCurrentComicNum()
+	comicList := make([]model.Comic, 0)
+
+	for i := lastStoredComic; i < latestComicNumber; i++ {
+		go fetchComic(i + 1)
+	}
+
+	for i := lastStoredComic; i < latestComicNumber; i++ {
+		comicList = append(comicList, <-comicChan)
+	}
 	db.BatchStoreComics(comicList)
 	return comicList
 }
