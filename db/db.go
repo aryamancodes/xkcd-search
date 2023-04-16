@@ -170,7 +170,10 @@ func GetTermFreq(queryTerms []string) map[int]model.TermFreq {
 	termFreq := make(map[string]int)
 	stemRootMap := make(map[string]string)
 	for i, row := range termFeqDB {
-		if row.ComicNum != prevNum || i == len(termFeqDB) {
+		if i == len(termFeqDB)-1 {
+			prevNum = row.ComicNum
+		}
+		if row.ComicNum != prevNum || i == len(termFeqDB)-1 {
 			completedTF := model.TermFreq{
 				ComicNum:        prevNum,
 				TermInComicFreq: termFreq,

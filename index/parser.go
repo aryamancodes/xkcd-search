@@ -60,7 +60,7 @@ func parseMetaData(metadata string, comic model.ExplainWikiJson) model.Comic {
 
 func parseSection(section string) (string, bool) {
 	//check for incomplete section and remove if needed
-	incompleteRegex := regexp.MustCompile(`\{\{incomplete.* soon.\}\}`)
+	incompleteRegex := regexp.MustCompile(`\{\{(?s)incomplete.*?\}\}`)
 	isIncomplete := incompleteRegex.Match([]byte(section))
 	if isIncomplete {
 		section = incompleteRegex.ReplaceAllString(section, "")
