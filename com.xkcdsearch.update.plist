@@ -1,0 +1,41 @@
+    <?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.xkcdsearch.update</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/bin/go</string>
+        <string>run</string>
+        <string>.</string>
+        <string>-update</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>DBUSER</key>
+        <string></string>
+        <key>DBPASS</key>
+        <string></string>
+        <key>DBADDR</key>
+        <string></string>
+    </dict>
+    <key>WorkingDirectory</key>
+    <string>MYPATH/xkcd-search</string>    
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Hour</key>
+            <integer>17</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+            <key>WeekDay</key>
+            <integer>2</integer> 
+        </dict>
+    </array>
+    <key>StandardErrorPath</key>
+    <string>MYPATH/xkcd-search/update-error.log</string>
+    <key>StandardOutPath</key>
+    <string>MYPATH/xkcd-search/update-out.log</string>
+</dict>
+</plist>

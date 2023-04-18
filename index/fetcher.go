@@ -89,7 +89,7 @@ func FetchAllComics() []model.Comic {
 func FetchNewComics() []model.Comic {
 	lastStoredComic := db.GetLastStoredComicNum()
 	latestComicNumber := getCurrentComicNum()
-	if lastStoredComic == lastStoredComic {
+	if lastStoredComic == latestComicNumber {
 		return nil
 	}
 	comicList := make([]model.Comic, 0)
