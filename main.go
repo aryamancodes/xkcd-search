@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"xkcd/api"
 	"xkcd/db"

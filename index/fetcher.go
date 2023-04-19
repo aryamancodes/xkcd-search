@@ -21,7 +21,7 @@ const EXPLAIN_URL = "https://www.explainxkcd.com/wiki/api.php?action=parse&page=
 var comicChan = make(chan model.Comic, 250)
 
 // get the latest comic's number directly from the xkcd api
-func getCurrentComicNum() int {
+func GetCurrentComicNum() int {
 	resp, err := http.Get(CURR_COMIC_URL)
 	if err != nil {
 		log.Fatalln(err)
@@ -70,7 +70,7 @@ func fetchComic(num int) {
 
 // (concurrently) fetch all comics+explanations based on the current comic number
 func FetchAllComics() []model.Comic {
-	latestComicNumber := getCurrentComicNum()
+	latestComicNumber := GetCurrentComicNum()
 	comicList := make([]model.Comic, 0, latestComicNumber)
 
 	for i := 0; i < latestComicNumber; i++ {
@@ -88,7 +88,7 @@ func FetchAllComics() []model.Comic {
 // fetch new comics when updating
 func FetchNewComics() []model.Comic {
 	lastStoredComic := db.GetLastStoredComicNum()
-	latestComicNumber := getCurrentComicNum()
+	latestComicNumber := GetCurrentComicNum()
 	if lastStoredComic == latestComicNumber {
 		return nil
 	}

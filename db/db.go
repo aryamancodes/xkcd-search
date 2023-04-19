@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -110,6 +111,38 @@ func GetRawWords() []string {
 	rawString += strings.Join(alt, " ") + " "
 	rawWords := strings.Fields(rawString)
 	return rawWords
+}
+
+func GetStats(currStats model.Stats) model.Stats {
+	currStats.TotalIncompleteComics = len(GetIncomplete())
+	selectString := "%s(length(explanation_raw)) , %s(length(title_raw)), %s(length(alt_text_raw)), %s(length(transcript_raw))"
+
+	var maxExplain, maxTitle, maxAlt, maxTranscript int
+	err := db.Table("comics").Select(fmt.Sprintf(selectString, "MAX", "MAX", "MAX", "MAX")).Row().Scan(&maxExplain, &maxTitle, &maxAlt, &maxTranscript)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	selectString = strings.ReplaceAll(selectString, ",", "+")
+	var totalChars, totalRoot int
+	err = db.Table("comics").Select(fmt.Sprintf(selectString, "SUM", "SUM", "SUM", "SUM")).Row().Scan(&totalChars)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	var avgTermFreq, avgTermChars float32
+	err = db.Table("term_frequency").Select("COUNT(freq), AVG(freq), AVG(length(freq))").Row().Scan(&totalRoot, &avgTermFreq, &avgTermChars)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	currStats.TotalChars = totalChars
+	currStats.TotalRootWords = totalRoot
+	currStats.AverageTermChars = avgTermChars
+	currStats.AverageTermFreq = avgTermFreq
+	currStats.MaxExplanationChars = maxExplain
+	currStats.MaxTitleChars = maxTitle
+	currStats.MaxAltChars = maxAlt
+	currStats.MaxTranscriptChars = maxTranscript
+	return currStats
 }
 
 func BatchStoreTermFreq(termFreqs []model.TermFreq) {

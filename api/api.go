@@ -19,6 +19,7 @@ import (
 
 var comics []model.Comic
 var comicFreq model.ComicFreq
+var stats model.Stats
 var ginLambda *ginadapter.GinLambda
 
 func AWSHandler(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -34,6 +35,9 @@ func Serve(local bool) {
 	comics = db.GetComics()
 	comicFreq = db.GetComicFreq()
 	comicFreq.TotalComics = len(comics)
+	stats.LastIndexedComic = len(comics)
+	stats.LastCreatedComic = index.GetCurrentComicNum()
+	stats = db.GetStats(stats)
 	words := db.GetRawWords()
 	nlp.TrainModel(words)
 
@@ -44,6 +48,9 @@ func Serve(local bool) {
 
 	// handle search: /search?q="query"
 	r.GET("/search", handleSearch)
+
+	//handle stats: /stats
+	r.GET("/stats", handleStats)
 
 	if local {
 		r.Run()
@@ -71,6 +78,10 @@ func corsMiddleware() gin.HandlerFunc {
 
 func handleLoad(c *gin.Context) {
 	c.JSON(200, "Welcome to xkcd-search!")
+}
+
+func handleStats(c *gin.Context) {
+	c.JSON(200, stats)
 }
 
 func handleSuggest(c *gin.Context) {

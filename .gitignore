@@ -22,3 +22,4 @@ bin/
 *.zip
 *.sh
 *.log
+*.plist 

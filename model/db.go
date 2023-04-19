@@ -42,3 +42,18 @@ type ComicFreqDTO struct {
 func (ComicFreqDTO) TableName() string {
 	return "comic_frequency"
 }
+
+// struct used to find interesting statistics
+type Stats struct {
+	LastIndexedComic      int     // num of latest comic we have stored
+	LastCreatedComic      int     // num of most recent xkcd comic uploaded (not necessarily indexed by us)
+	TotalChars            int     // total chars in all the comics
+	TotalRootWords        int     // total stem terms
+	AverageTermFreq       float32 // average times a term occurs
+	AverageTermChars      float32 //average length of a term
+	TotalIncompleteComics int
+	MaxExplanationChars   int
+	MaxAltChars           int
+	MaxTitleChars         int
+	MaxTranscriptChars    int
+}
