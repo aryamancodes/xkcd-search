@@ -118,6 +118,7 @@ func handleSearch(c *gin.Context) {
 	}
 	query := request.Query
 	autocorrect := request.Autocorrect
+
 	rawQuery, stemQuery := nlp.CleanAndStem(query)
 	if autocorrect {
 		hasTypo, autocorrectedRaw = nlp.Autocorect(rawQuery)
@@ -133,12 +134,13 @@ func handleSearch(c *gin.Context) {
 		return
 	}
 
-	//sort rankings and return at most 10 comics
+	//sort rankings and return at the correct page
 	sort.Slice(rankings, func(i, j int) bool {
 		return rankings[i].Rank >= rankings[j].Rank
 	})
-	length := int(math.Min(float64(len(rankings)), 10))
-	rankings = rankings[:length]
+	pageCount := 10                                                                  //total number of comics on one page
+	start := int(math.Min(float64(request.Start), float64(len(rankings)-pageCount))) //starting index of the page, defaults to 0
+	rankings = rankings[start : start+pageCount]
 
 	//if there was a typo, return the autocorrected version and ranking
 	if hasTypo {
