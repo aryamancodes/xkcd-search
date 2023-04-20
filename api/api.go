@@ -130,7 +130,7 @@ func handleSearch(c *gin.Context) {
 
 	//if no comics are found, return 404
 	if len(rankings) == 0 {
-		c.JSON(404, "No results found. Maybe there isn't an xkcd for everything")
+		c.JSON(404, rankings)
 		return
 	}
 
@@ -138,9 +138,12 @@ func handleSearch(c *gin.Context) {
 	sort.Slice(rankings, func(i, j int) bool {
 		return rankings[i].Rank >= rankings[j].Rank
 	})
-	pageCount := 10                                                                  //total number of comics on one page
-	start := int(math.Min(float64(request.Start), float64(len(rankings)-pageCount))) //starting index of the page, defaults to 0
-	rankings = rankings[start : start+pageCount]
+
+	if len(rankings) > 10 {
+		pageCount := int(math.Min(10.0, float64(len(rankings))))                         //total number of comics on one page
+		start := int(math.Min(float64(request.Start), float64(len(rankings)-pageCount))) //starting index of the page, defaults to 0
+		rankings = rankings[start : start+pageCount]
+	}
 
 	//if there was a typo, return the autocorrected version and ranking
 	if hasTypo {
