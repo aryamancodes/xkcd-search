@@ -28,9 +28,7 @@ func AWSHandler(ctx context.Context, req events.APIGatewayProxyRequest) (events.
 
 func Serve(local bool) {
 	r := gin.Default()
-	if local {
-		r.Use(corsMiddleware())
-	}
+	r.Use(corsMiddleware())
 	db.Connect()
 	comics = db.GetComics()
 	comicFreq = db.GetComicFreq()
@@ -139,6 +137,8 @@ func handleSearch(c *gin.Context) {
 		return rankings[i].Rank >= rankings[j].Rank
 	})
 
+	totalRanked := len(rankings)
+
 	if len(rankings) > 10 {
 		pageCount := int(math.Min(10.0, float64(len(rankings))))                         //total number of comics on one page
 		start := int(math.Min(float64(request.Start), float64(len(rankings)-pageCount))) //starting index of the page, defaults to 0
@@ -150,6 +150,7 @@ func handleSearch(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"autocorrect": autocorrectedRaw,
 			"rankings":    rankings,
+			"totalRanked": totalRanked,
 		})
 		return
 	}
