@@ -19,6 +19,7 @@ type Comic struct {
 	Explanation    string
 	ExplanationRaw string
 	Incomplete     bool `gorm:"default:false"`
+	Interactive    bool `gorm:"default:false"`
 }
 
 // struct used to store individual terms and their term-frequencies into db

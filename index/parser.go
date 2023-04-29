@@ -86,6 +86,18 @@ func Parse(comic model.ExplainWikiJson) model.Comic {
 	parsedComic.TranscriptRaw, parsedComic.Transcript = nlp.CleanAndStem(transcript)
 	parsedComic.ExplanationRaw, parsedComic.Explanation = nlp.CleanAndStem(explanation)
 	parsedComic.Incomplete = transcriptIncomplete || explanationIncomplete
+	parsedComic.Interactive = checkInteractive(content)
 
 	return parsedComic
+}
+
+func checkInteractive(content string) bool {
+	dynamicRegex := regexp.MustCompile(`\[Category:Dynamic comics\]`)
+	animatedRegex := regexp.MustCompile(`\[Category:Comics with animation\]`)
+	interactiveRegex := regexp.MustCompile(`\[Category:Interactive comics\]`)
+
+	byteContent := []byte(content)
+
+	return dynamicRegex.Match(byteContent) || animatedRegex.Match(byteContent) ||
+		interactiveRegex.Match(byteContent)
 }

@@ -3,6 +3,8 @@ package model
 // struct to store the ranking of a query, along with an array of term sections
 type RankedComic struct {
 	ComicNum     int
+	Incomplete   bool
+	Interactive  bool
 	Rank         float64
 	TermSections []TermSection
 }

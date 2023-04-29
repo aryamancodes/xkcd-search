@@ -190,6 +190,8 @@ func RankQuery(rawQuery string, stemQuery string, allComics []model.Comic, comic
 		if rank > 0 {
 			rankings = append(rankings, model.RankedComic{
 				ComicNum:     i,
+				Incomplete:   allComics[i-1].Incomplete,
+				Interactive:  allComics[i-1].Interactive,
 				Rank:         rank,
 				TermSections: findMatchSections(stemQueryTerms, rawQueryTerms, allComics[currTermFreq.ComicNum-1]),
 			})

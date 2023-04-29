@@ -12,7 +12,8 @@ CREATE TABLE comics (
   transcript_raw LONGTEXT, 
   explanation LONGTEXT, 
   explanation_raw LONGTEXT, 
-  incomplete BOOL
+  incomplete BOOL,
+  interactive BOOL
 );
 
 DROP TABLE IF EXISTS term_frequency;
