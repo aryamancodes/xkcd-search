@@ -140,9 +140,9 @@ func handleSearch(c *gin.Context) {
 	totalRanked := len(rankings)
 
 	if len(rankings) > 10 {
-		pageCount := int(math.Min(10.0, float64(len(rankings))))                         //total number of comics on one page
-		start := int(math.Min(float64(request.Start), float64(len(rankings)-pageCount))) //starting index of the page, defaults to 0
-		rankings = rankings[start : start+pageCount]
+		pageCount := int(math.Min(10.0, float64(len(rankings)))) //total number of comics on one page
+		end := int(math.Min(float64(request.Start+pageCount), float64(len(rankings))))
+		rankings = rankings[request.Start:end]
 	}
 
 	//if there was a typo, return the autocorrected version and ranking
@@ -156,6 +156,9 @@ func handleSearch(c *gin.Context) {
 	}
 
 	//return just the ranking if there was no typo
-	c.JSON(200, rankings)
+	c.JSON(200, gin.H{
+		"rankings":    rankings,
+		"totalRanked": totalRanked,
+	})
 	return
 }
